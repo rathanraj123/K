@@ -30,6 +30,13 @@ class BaseConfig(BaseSettings):
     def assemble_db_url(self) -> 'BaseConfig':
         if not self.DATABASE_URL:
             self.DATABASE_URL = f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        else:
+            # Render/Heroku inject DATABASE_URL starting with postgresql:// or postgres://.
+            # We must convert this to postgresql+asyncpg:// for async SQLAlchemy.
+            if self.DATABASE_URL.startswith("postgresql://"):
+                self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif self.DATABASE_URL.startswith("postgres://"):
+                self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
         return self
 
     REDIS_URL: str = "redis://localhost:6379/0"
