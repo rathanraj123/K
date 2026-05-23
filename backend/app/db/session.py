@@ -10,6 +10,10 @@ engine_kwargs = {
 if settings.DATABASE_URL and "postgresql" in settings.DATABASE_URL:
     engine_kwargs["pool_size"] = 10
     engine_kwargs["max_overflow"] = 20
+    engine_kwargs["connect_args"] = {
+        "timeout": 10.0,
+        "command_timeout": 10.0,
+    }
 
 engine = create_async_engine(
     settings.DATABASE_URL,

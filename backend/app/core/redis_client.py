@@ -15,7 +15,13 @@ async def init_redis():
     """Initialize Redis connection pool."""
     global redis_client
     try:
-        redis_client = redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+        redis_client = redis.from_url(
+            REDIS_URL,
+            encoding="utf-8",
+            decode_responses=True,
+            socket_timeout=5.0,
+            socket_connect_timeout=5.0
+        )
         # Ping to check connection
         await redis_client.ping()
         logger.info("Successfully connected to Redis L1 Cache.")
