@@ -73,13 +73,16 @@ async def lifespan(app: FastAPI):
     import asyncio
     asyncio.create_task(bg_es_setup())
 
-    # 2. Pre-warm the embedding model so the first chat request is instant
-    try:
-        from app.vector.embedding import embedding_service
-        await embedding_service._get_model()
-        logger.info("Embedding model pre-warmed successfully.")
-    except Exception as e:
-        logger.warning(f"Embedding model pre-warm failed: {e}")
+    # 2. Pre-warm the embedding model in the background so it doesn't block server startup
+    async def bg_embedding_prewarm():
+        try:
+            from app.vector.embedding import embedding_service
+            await embedding_service._get_model()
+            logger.info("Embedding model pre-warmed successfully in background.")
+        except Exception as e:
+            logger.warning(f"Embedding model pre-warm failed: {e}")
+
+    asyncio.create_task(bg_embedding_prewarm())
 
     # 3. Initialize Redis L1 cache connection and start WebSocket Redis listener
     try:
