@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 150 10% 98%;
+    --foreground: 160 30% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 160 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 30% 8%;
+    --primary: 160 84% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 243 75% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 150 10% 94%;
+    --muted-foreground: 160 10% 45%;
+    --accent: 160 60% 92%;
+    --accent-foreground: 160 84% 20%;
+    --destructive: 0 84% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 35 90% 40%;
+    --warning-foreground: 0 0% 100%;
+    --success: 142 76% 30%;
+    --success-foreground: 0 0% 100%;
+    --border: 150 15% 88%;
+    --input: 150 15% 88%;
+    --ring: 160 84% 30%;
+    --radius: 0.75rem;
+
+    --glass-bg: 0 0% 100% / 0.8;
+    --glass-border: 0 0% 100% / 0.4;
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 30%), hsl(180 70% 35%));
+    --gradient-secondary: linear-gradient(135deg, hsl(243 75% 55%), hsl(280 70% 50%));
+    --gradient-hero: transparent;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 160 84% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 60% 92%;
+    --sidebar-accent-foreground: 160 84% 20%;
+    --sidebar-border: 150 15% 88%;
+    --sidebar-ring: 160 84% 30%;
+  }
+
+  .dark {
+    --background: 220 20% 6%;
+    --foreground: 150 10% 95%;
+    --card: 220 20% 10%;
+    --card-foreground: 150 10% 95%;
+    --popover: 220 20% 10%;
+    --popover-foreground: 150 10% 95%;
+    --primary: 160 84% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 243 75% 65%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 150 10% 65%;
+    --accent: 160 40% 15%;
+    --accent-foreground: 160 84% 60%;
+    --destructive: 0 62% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 45 93% 55%;
+    --warning-foreground: 0 0% 10%;
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 160 84% 45%;
+
+    --glass-bg: 220 20% 10% / 0.7;
+    --glass-border: 0 0% 100% / 0.08;
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 35%), hsl(180 70% 30%));
+    --gradient-secondary: linear-gradient(135deg, hsl(243 75% 50%), hsl(280 70% 45%));
+    --gradient-hero: transparent;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 150 10% 90%;
+    --sidebar-primary: 160 84% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 40% 15%;
+    --sidebar-accent-foreground: 160 84% 60%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 160 84% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-card/70 backdrop-blur-xl border border-border/50 shadow-lg;
+  }
+  .glass-strong {
+    @apply bg-card/85 backdrop-blur-2xl border border-border/60 shadow-xl;
+  }
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  }
+  .glow-primary {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.15), 0 0 80px hsl(var(--primary) / 0.05);
+  }
+  .glow-secondary {
+    box-shadow: 0 0 40px hsl(var(--secondary) / 0.15), 0 0 80px hsl(var(--secondary) / 0.05);
+  }
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+  .hover-lift:hover {
+    @apply -translate-y-1 shadow-xl;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Dashboard scan result animations */
+@keyframes scan-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-scan-pulse {
+  animation: scan-pulse 2s ease-in-out infinite;
+}
+
+/* Skeleton loader for dashboard panels */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--accent)) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
