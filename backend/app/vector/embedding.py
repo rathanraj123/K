@@ -1,6 +1,5 @@
 import logging
 from typing import List, Union
-from sentence_transformers import SentenceTransformer
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,11 @@ class EmbeddingService:
                 if self.model is None:
                     logger.info(f"Loading embedding model: {self.model_name}")
                     # Offload model loading to thread to prevent blocking the event loop
-                    self.model = await asyncio.to_thread(SentenceTransformer, self.model_name)
+                    def load_st():
+                        from sentence_transformers import SentenceTransformer
+                        return SentenceTransformer(self.model_name)
+                    
+                    self.model = await asyncio.to_thread(load_st)
                     logger.info("Embedding model loaded successfully.")
         return self.model
 

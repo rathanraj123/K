@@ -82,12 +82,20 @@ class ConnectionManager:
         
         logger.info(f"Subscribed to Redis channel: {self.channel_name}")
         
-        try:
-            async for message in self.pubsub.listen():
-                if message["type"] == "message":
-                    data = json.loads(message["data"])
-                    await self.broadcast_to_local_sockets(data)
-        except Exception as e:
-            logger.error(f"Redis PubSub error: {e}")
+        import asyncio
+        while True:
+            try:
+                async for message in self.pubsub.listen():
+                    if message and message["type"] == "message":
+                        data = json.loads(message["data"])
+                        await self.broadcast_to_local_sockets(data)
+            except Exception as e:
+                # If it's a timeout, just continue and listen again.
+                # The generator terminates on exception, so we need to recreate it via the while loop.
+                if "Timeout" in str(e) or "TimeoutError" in type(e).__name__:
+                    continue
+                logger.error(f"Redis PubSub error: {e}")
+                await asyncio.sleep(2)
+
             
 manager = ConnectionManager()

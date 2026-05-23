@@ -44,22 +44,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[150px] pointer-events-none" />
 
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 w-72 glass-strong border-r border-border/40 z-30 flex flex-col justify-between p-6">
+      <aside className="fixed inset-y-0 left-0 w-72 glass-strong border-r border-border/40 z-30 flex flex-col justify-between p-6 pt-24">
         <div className="space-y-8">
-          {/* Header/Logo */}
-          <div className="flex items-center justify-between">
-            <Link to="/admin" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-emerald-500/20 transition-all duration-300">
-                <Leaf className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <span className="text-base font-black tracking-tight">
-                  Agri<span className="text-primary">Cosmo</span>
-                </span>
-                <span className="block text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Admin Console</span>
-              </div>
-            </Link>
-          </div>
+          {/* Logo is handled by the global Navbar, removed from here to prevent duplication */}
 
           {/* Navigation Links */}
           <nav className="space-y-1.5">
@@ -151,7 +138,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 pl-72 min-h-screen flex flex-col relative z-10">
+      <div className="flex-1 pl-72 min-h-screen flex flex-col relative z-10 pt-16 max-w-[100vw] overflow-x-hidden">
         <main className="flex-1 p-8 md:p-10">
           {children}
         </main>

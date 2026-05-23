@@ -16,11 +16,7 @@ from app.modules.detection.image_quality import image_quality_analyzer
 from app.modules.detection.weather_risk import weather_risk_service, DISEASE_CATEGORY_MAP
 from app.modules.detection.prompt_builder import build_full_intelligence_prompt
 
-# Lazy-load tensorflow
-try:
-    import tensorflow as tf
-except ImportError:
-    tf = None
+# TensorFlow will be lazy-loaded to prevent memory/timeout issues during Render deployment
 
 import os
 
@@ -54,25 +50,36 @@ class DetectionService:
             "tungro",
         ]
 
-        if (
-            tf
-            and os.path.exists(self.model_path)
-            and os.path.getsize(self.model_path) > 1000
-        ):
+    async def _get_interpreter(self):
+        """Lazy load TensorFlow and the model to save RAM and prevent Uvicorn port binding timeouts."""
+        if self.interpreter is not None:
+            return self.interpreter, self.input_details, self.output_details
+
+        try:
+            import tensorflow as tf
+        except ImportError:
+            logger.error("TensorFlow is not installed.")
+            return None, None, None
+
+        if os.path.exists(self.model_path) and os.path.getsize(self.model_path) > 1000:
+            import asyncio
             try:
                 logger.info(f"Loading TFLite model from {self.model_path}...")
-                self.interpreter = tf.lite.Interpreter(model_path=self.model_path)
-                self.interpreter.allocate_tensors()
-                self.input_details = self.interpreter.get_input_details()
-                self.output_details = self.interpreter.get_output_details()
+                # Load model in a separate thread to prevent blocking the async event loop
+                def load_tf():
+                    interpreter = tf.lite.Interpreter(model_path=self.model_path)
+                    interpreter.allocate_tensors()
+                    return interpreter, interpreter.get_input_details(), interpreter.get_output_details()
+                
+                self.interpreter, self.input_details, self.output_details = await asyncio.to_thread(load_tf)
                 logger.info("✅ TFLite Model loaded successfully.")
+                return self.interpreter, self.input_details, self.output_details
             except Exception as e:
                 logger.error(f"❌ Failed to load TFLite model: {e}")
-                raise RuntimeError(f"TFLite Model failed to load: {e}")
+                return None, None, None
         else:
-            logger.error(
-                f"⚠️ Model file not found at {self.model_path} or invalid length."
-            )
+            logger.error(f"⚠️ Model file not found at {self.model_path} or invalid length.")
+            return None, None, None
 
     # ─── Main Detection Pipeline ─────────────────────────────────
 
@@ -93,9 +100,6 @@ class DetectionService:
 
         Each stage is isolated — failures don't cascade.
         """
-        if not self.interpreter:
-            raise RuntimeError("ML model is not loaded in memory")
-
         result: Dict[str, Any] = {}
 
         # ── Stage 1: Image Quality Analysis ──────────────────────
@@ -108,6 +112,10 @@ class DetectionService:
 
         # ── Stage 2: ML Inference ────────────────────────────────
         try:
+            interpreter, input_details, output_details = await self._get_interpreter()
+            if not interpreter:
+                raise RuntimeError("ML model is not loaded in memory")
+
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -119,11 +127,9 @@ class DetectionService:
             img = img.astype("float32")
             img_array = np.expand_dims(img, axis=0)
 
-            self.interpreter.set_tensor(self.input_details[0]["index"], img_array)
-            self.interpreter.invoke()
-            predictions = self.interpreter.get_tensor(
-                self.output_details[0]["index"]
-            )
+            interpreter.set_tensor(input_details[0]["index"], img_array)
+            interpreter.invoke()
+            predictions = interpreter.get_tensor(output_details[0]["index"])
 
             # Top-k confidence breakdown
             probs = predictions[0]
