@@ -19,4 +19,17 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },
+  build: {
+    minify: 'terser',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', 'zustand', '@tanstack/react-query'],
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
+          ui: ['framer-motion', 'lucide-react', 'recharts'],
+        },
+      },
+    },
+  },
 }));

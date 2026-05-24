@@ -18,8 +18,9 @@ httpx>=0.27.0
 groq>=0.4.2
 huggingface-hub>=0.21.4
 email-validator>=2.1.1
+elastic-transport<9.0.0
 elasticsearch[async]<9.0.0
-sentence-transformers>=2.5.0
+fastembed>=0.2.7
 
 # Observability & Monitoring
 loguru>=0.7.2
@@ -28,7 +29,5 @@ prometheus-client>=0.20.0
 # AI & Plant Disease Image Processing Dependencies
 numpy>=1.26.0
 Pillow>=10.2.0
-pandas>=2.2.0
-scikit-learn>=1.4.0
 opencv-python-headless>=4.9.0
-tensorflow>=2.15.0
+ai-edge-litert>=2.1.5

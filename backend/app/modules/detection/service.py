@@ -51,14 +51,14 @@ class DetectionService:
         ]
 
     async def _get_interpreter(self):
-        """Lazy load TensorFlow and the model to save RAM and prevent Uvicorn port binding timeouts."""
+        """Lazy load TFLite to save RAM and prevent Uvicorn port binding timeouts."""
         if self.interpreter is not None:
             return self.interpreter, self.input_details, self.output_details
 
         try:
-            import tensorflow as tf
+            import ai_edge_litert.interpreter as tflite
         except ImportError:
-            logger.error("TensorFlow is not installed.")
+            logger.error("ai-edge-litert is not installed.")
             return None, None, None
 
         if os.path.exists(self.model_path) and os.path.getsize(self.model_path) > 1000:
@@ -67,7 +67,7 @@ class DetectionService:
                 logger.info(f"Loading TFLite model from {self.model_path}...")
                 # Load model in a separate thread to prevent blocking the async event loop
                 def load_tf():
-                    interpreter = tf.lite.Interpreter(model_path=self.model_path)
+                    interpreter = tflite.Interpreter(model_path=self.model_path)
                     interpreter.allocate_tensors()
                     return interpreter, interpreter.get_input_details(), interpreter.get_output_details()
                 

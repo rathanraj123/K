@@ -5,7 +5,7 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 class EmbeddingService:
-    def __init__(self, model_name: str = 'sentence-transformers/all-mpnet-base-v2'):
+    def __init__(self, model_name: str = 'nomic-ai/nomic-embed-text-v1.5'):
         self.model_name = model_name
         self.model = None
         self._load_lock = asyncio.Lock()
@@ -17,11 +17,11 @@ class EmbeddingService:
                 if self.model is None:
                     logger.info(f"Loading embedding model: {self.model_name}")
                     # Offload model loading to thread to prevent blocking the event loop
-                    def load_st():
-                        from sentence_transformers import SentenceTransformer
-                        return SentenceTransformer(self.model_name)
+                    def load_embed():
+                        from fastembed import TextEmbedding
+                        return TextEmbedding(model_name=self.model_name)
                     
-                    self.model = await asyncio.to_thread(load_st)
+                    self.model = await asyncio.to_thread(load_embed)
                     logger.info("Embedding model loaded successfully.")
         return self.model
 
@@ -29,10 +29,19 @@ class EmbeddingService:
         """Generate 768-d embeddings for the given text."""
         model = await self._get_model()
         try:
+            # fastembed requires a list of strings
+            is_single = isinstance(text, str)
+            texts = [text] if is_single else text
+            
             # Offload generation to thread
-            embeddings = await asyncio.to_thread(model.encode, text)
-            if isinstance(text, str):
-                return embeddings.tolist()
+            def generate():
+                # embed returns an iterable of numpy arrays
+                return list(model.embed(texts))
+                
+            embeddings = await asyncio.to_thread(generate)
+            
+            if is_single:
+                return embeddings[0].tolist()
             return [e.tolist() for e in embeddings]
         except Exception as e:
             logger.error(f"Failed to generate embedding: {str(e)}")
