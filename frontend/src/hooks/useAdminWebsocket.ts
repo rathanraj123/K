@@ -3,6 +3,8 @@ import { useAdminStore } from '../store/adminStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { API_ORIGIN } from '../lib/api';
+
 export function useAdminWebsocket() {
   const ws = useRef<WebSocket | null>(null);
   const reconnectAttempt = useRef(0);
@@ -14,10 +16,11 @@ export function useAdminWebsocket() {
     let isMounted = true;
     
     const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = process.env.NODE_ENV === 'production' 
-        ? `${protocol}//${window.location.host}/ws`
-        : 'ws://127.0.0.1:8000/ws';
+      let wsUrl = API_ORIGIN.replace(/^http/, 'ws') + '/ws';
+      // Fallback for local development if API_ORIGIN is somehow empty
+      if (!wsUrl.startsWith('ws')) {
+          wsUrl = 'ws://127.0.0.1:8000/ws';
+      }
 
       ws.current = new WebSocket(wsUrl);
 

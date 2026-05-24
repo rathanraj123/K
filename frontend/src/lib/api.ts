@@ -1,5 +1,9 @@
 // Dynamically resolve API URL using Vite environment variables, falling back to local dev server.
-export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1').replace(/\/+$/, '');
+let _baseUrl = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1').replace(/\/+$/, '');
+if (!_baseUrl.endsWith('/api/v1')) {
+  _baseUrl += '/api/v1';
+}
+export const API_BASE_URL = _baseUrl;
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v\d+$/i, '');
 
 export type ApiBody = BodyInit | Record<string, unknown> | unknown[] | null | undefined;
