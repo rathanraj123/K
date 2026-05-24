@@ -15,10 +15,16 @@ if settings.DATABASE_URL and "postgresql" in settings.DATABASE_URL:
         "command_timeout": 10.0,
         "statement_cache_size": 0,
     }
-    engine_kwargs["prepared_statement_cache_size"] = 0
+
+db_url = settings.DATABASE_URL
+if db_url and "postgresql" in db_url:
+    if "?" in db_url:
+        db_url += "&prepared_statement_cache_size=0"
+    else:
+        db_url += "?prepared_statement_cache_size=0"
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    db_url,
     **engine_kwargs
 )
 
