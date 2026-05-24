@@ -1,0 +1,532 @@
+{
+    "bacterial_leaf_blight": {
+        "disease_name": "bacterial_leaf_blight",
+        "disease_identity": {
+            "scientific_name": "Xanthomonas oryzae pv. oryzae",
+            "disease_category": "Bacterial disease",
+            "spread_risk": "High",
+            "contagiousness": "Yes, through water and insects",
+            "crop_stage_affected": "Vegetative and reproductive stages"
+        },
+        "farmer_report": {
+            "diagnosis": "Yellowing or blackening of leaves, with a watery or necrotic appearance",
+            "severity": "Moderate to severe",
+            "crop_risk": "High risk of yield loss and grain quality degradation",
+            "weather_impact": "Favorable conditions: warm temperatures (25-35\u00b0C), high humidity, and rainfall",
+            "immediate_actions": [
+                "Remove infected plants to prevent further spread",
+                "Apply copper-based bactericides or biological control agents"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Copper oxychloride or copper hydroxide",
+                "dosage": "2-3 g/L of water",
+                "application_method": "Foliar spray or seed treatment",
+                "estimated_cost_inr": "500-1000 INR per liter"
+            },
+            "prevention_tips": [
+                "Maintain good crop hygiene and sanitation",
+                "Use resistant crop varieties or breeding lines"
+            ],
+            "agronomist_summary": "Bacterial leaf blight is a significant disease of rice, causing substantial yield loss and grain quality degradation. Early detection and prompt management are crucial to mitigate its impact."
+        },
+        "scientist_report": {
+            "primary_pathology": "Bacterial infection of the leaf tissue",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Presence of yellow or black lesions on the leaves",
+                "Water-soaked or necrotic areas on the leaves"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Xanthomonas oryzae pv. oryzae",
+                "taxonomy": "Gram-negative bacterium",
+                "infection_mechanism": "Bacterial invasion of plant cells through wounds or natural openings",
+                "disease_cycle_stage": "Active infection and colonization"
+            },
+            "environmental_correlation": "Temperature, humidity, and rainfall play a significant role in disease development",
+            "biochemical_impact": [
+                "Production of toxins and enzymes that damage plant cells",
+                "Induction of plant defense responses"
+            ],
+            "epidemiological_risk": "High risk of disease spread through water and insects",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies are needed to understand the genetic basis of resistance and to develop more effective management strategies"
+        }
+    },
+    "bacterial_leaf_streak": {
+        "disease_name": "bacterial_leaf_streak",
+        "disease_identity": {
+            "scientific_name": "Xanthomonas oryzae pv. oryzicola",
+            "disease_category": "Bacterial disease",
+            "spread_risk": "High",
+            "contagiousness": "Moderate",
+            "crop_stage_affected": "Vegetative and reproductive stages"
+        },
+        "farmer_report": {
+            "diagnosis": "Yellow or orange streaks on leaves, often with a yellow or orange border",
+            "severity": "Mild to severe",
+            "crop_risk": "High risk of yield loss and grain quality reduction",
+            "weather_impact": "Moisture and high temperatures exacerbate disease",
+            "immediate_actions": [
+                "Remove infected plants to prevent spread",
+                "Improve crop rotation and sanitation practices"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Copper-based bactericides",
+                "dosage": "500-750 ppm",
+                "application_method": "Foliar spray or seed treatment",
+                "estimated_cost_inr": "500-1000"
+            },
+            "prevention_tips": [
+                "Use resistant crop varieties",
+                "Maintain good crop rotation and sanitation practices"
+            ],
+            "agronomist_summary": "Bacterial leaf streak is a significant disease in rice, requiring prompt action to prevent yield loss and grain quality reduction."
+        },
+        "scientist_report": {
+            "primary_pathology": "Bacterial infection of leaf tissue",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Presence of yellow or orange streaks on leaves",
+                "Leaf tissue necrosis and discoloration"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Xanthomonas oryzae pv. oryzicola",
+                "taxonomy": "Gram-negative bacterium",
+                "infection_mechanism": "Bacterial injection of toxins into plant cells",
+                "disease_cycle_stage": "Active disease cycle during vegetative and reproductive stages"
+            },
+            "environmental_correlation": "Moisture and high temperatures increase disease risk",
+            "biochemical_impact": [
+                "Production of toxins and enzymes that damage plant cells",
+                "Induction of plant defense responses"
+            ],
+            "epidemiological_risk": "High risk of disease spread through contaminated water and plant material",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies on the molecular mechanisms of disease resistance and the development of novel control strategies"
+        }
+    },
+    "bacterial_panicle_blight": {
+        "disease_name": "bacterial_panicle_blight",
+        "disease_identity": {
+            "scientific_name": "Xanthomonas oryzae pv. oryzae",
+            "disease_category": "Bacterial disease",
+            "spread_risk": "High",
+            "contagiousness": "Moderate",
+            "crop_stage_affected": "Panicle formation to grain filling"
+        },
+        "farmer_report": {
+            "diagnosis": "Yellowing of panicles, followed by a watery exudate and a characteristic 'blight' appearance.",
+            "severity": "Severe",
+            "crop_risk": "High",
+            "weather_impact": "Favorable conditions for disease development: high temperatures (25-35\u00b0C), high humidity (>80%), and rainfall.",
+            "immediate_actions": [
+                "Remove infected panicles to prevent further spread",
+                "Apply copper-based bactericides as a foliar spray"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Copper oxychloride",
+                "dosage": "1.5-2.0 kg/ha",
+                "application_method": "Foliar spray",
+                "estimated_cost_inr": "150-200 INR/ha"
+            },
+            "prevention_tips": [
+                "Maintain good crop hygiene",
+                "Use resistant cultivars"
+            ],
+            "agronomist_summary": "Bacterial panicle blight is a significant threat to rice production worldwide. Early detection and prompt action are crucial to prevent economic losses."
+        },
+        "scientist_report": {
+            "primary_pathology": "Bacterial infection of the panicle tissue",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Panicle yellowing and exudate formation",
+                "Presence of bacterial colonies on infected tissue"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Xanthomonas oryzae pv. oryzae",
+                "taxonomy": "Gram-negative bacterium",
+                "infection_mechanism": "Bacterial invasion of plant tissue through wounds or natural openings",
+                "disease_cycle_stage": "Active infection and colonization"
+            },
+            "environmental_correlation": "Temperature and humidity play a crucial role in disease development",
+            "biochemical_impact": [
+                "Production of extracellular enzymes",
+                "Induction of plant defense responses"
+            ],
+            "epidemiological_risk": "High risk of spread through contaminated water and infected plant material",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies on the molecular mechanisms of disease resistance and the development of novel control strategies"
+        }
+    },
+    "blast": {
+        "disease_name": "blast",
+        "disease_identity": {
+            "scientific_name": "Magnaporthe oryzae",
+            "disease_category": "Fungal disease",
+            "spread_risk": "High",
+            "contagiousness": "Yes",
+            "crop_stage_affected": "Seedling, tillering, and panicle initiation stages"
+        },
+        "farmer_report": {
+            "diagnosis": "Appearance of blast lesions on leaves and necks of rice plants",
+            "severity": "Moderate to severe",
+            "crop_risk": "High risk of yield loss and reduced grain quality",
+            "weather_impact": "Favorable conditions for disease development: high humidity, warm temperatures, and rainfall",
+            "immediate_actions": [
+                "Remove infected plants to prevent further spread",
+                "Apply fungicides to control the disease"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Azoxystrobin or Trifloxystrobin",
+                "dosage": "500-750 ml/ha",
+                "application_method": "Foliar spray or seed treatment",
+                "estimated_cost_inr": "500-1000"
+            },
+            "prevention_tips": [
+                "Maintain good crop rotation and sanitation practices",
+                "Use resistant cultivars and apply fungicides as a preventive measure"
+            ],
+            "agronomist_summary": "Blast disease is a significant threat to rice production worldwide. Early detection and prompt action are crucial to minimize yield loss and ensure grain quality."
+        },
+        "scientist_report": {
+            "primary_pathology": "Fungal infection causing lesions on rice leaves and necks",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Lesions appear as small, circular, or oval-shaped spots with a yellow or gray center",
+                "Lesions may be accompanied by a yellow or orange halo"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Magnaporthe oryzae",
+                "taxonomy": "Ascomycota: Magnaporthaceae",
+                "infection_mechanism": "Penetration of host cells through appressoria",
+                "disease_cycle_stage": "Hemibiotrophic"
+            },
+            "environmental_correlation": "Disease development is influenced by temperature, humidity, and rainfall",
+            "biochemical_impact": [
+                "Production of toxins and enzymes that break down plant cell walls",
+                "Induction of plant defense responses"
+            ],
+            "epidemiological_risk": "High risk of disease spread through infected seed, water, and air",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies are needed to understand the genetic basis of resistance in rice cultivars and to develop more effective management strategies"
+        }
+    },
+    "brown_spot": {
+        "disease_name": "brown_spot",
+        "disease_identity": {
+            "scientific_name": "Cochliobolus miyabeanus",
+            "disease_category": "Fungal disease",
+            "spread_risk": "High",
+            "contagiousness": "Moderate",
+            "crop_stage_affected": "Panicle initiation to grain maturity"
+        },
+        "farmer_report": {
+            "diagnosis": "Brown spots on leaves and panicles, often with a yellowish center",
+            "severity": "Moderate to severe",
+            "crop_risk": "High risk of yield loss and grain quality deterioration",
+            "weather_impact": "Favorable for disease development in warm and humid conditions",
+            "immediate_actions": [
+                "Remove infected panicles and dispose of them properly",
+                "Apply fungicides to prevent further spread"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Triadimefon or Azoxystrobin-based fungicides",
+                "dosage": "Follow label instructions for application rates",
+                "application_method": "Foliar spray or seed treatment",
+                "estimated_cost_inr": "500-1000 INR per liter"
+            },
+            "prevention_tips": [
+                "Maintain good crop rotation and sanitation practices",
+                "Use resistant cultivars and crop management practices"
+            ],
+            "agronomist_summary": "Brown spot is a significant disease of rice, causing yield loss and grain quality deterioration. Early detection and management are crucial to minimize its impact."
+        },
+        "scientist_report": {
+            "primary_pathology": "Fungal infection causing necrotic lesions on leaves and panicles",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Lesions are typically brown to black, with a yellowish center",
+                "Lesions may be surrounded by a yellowish halo"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Cochliobolus miyabeanus",
+                "taxonomy": "Ascomycota: Pleosporales: Pleosporaceae",
+                "infection_mechanism": "Fungal spores infect plant tissues through wounds or natural openings",
+                "disease_cycle_stage": "Infectious spores are produced on infected plant tissues"
+            },
+            "environmental_correlation": "Disease development is favored by warm and humid conditions",
+            "biochemical_impact": [
+                "Production of phytotoxins and other secondary metabolites",
+                "Induction of plant defense responses"
+            ],
+            "epidemiological_risk": "High risk of disease spread through infected seed, water, and air",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies are needed to understand the genetic basis of resistance and to develop more effective management strategies"
+        }
+    },
+    "dead_heart": {
+        "disease_name": "dead_heart",
+        "disease_identity": {
+            "scientific_name": "Magnaporthe oryzae",
+            "disease_category": "Fungal disease",
+            "spread_risk": "High",
+            "contagiousness": "Moderate",
+            "crop_stage_affected": "Seedling to tillering stage"
+        },
+        "farmer_report": {
+            "diagnosis": "Identified by yellowing of leaves and dead heart symptoms",
+            "severity": "Moderate to severe",
+            "crop_risk": "High risk of yield loss",
+            "weather_impact": "Favorable for disease development in warm and humid conditions",
+            "immediate_actions": [
+                "Remove infected plants to prevent further spread",
+                "Apply fungicides to prevent disease progression"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Azoxystrobin 12.6% + Trifloxystrobin 8.7% SC",
+                "dosage": "100-150 ml/ha",
+                "application_method": "Foliar spray",
+                "estimated_cost_inr": "500-700"
+            },
+            "prevention_tips": [
+                "Maintain good crop rotation and sanitation practices",
+                "Use resistant varieties and apply fungicides as a preventive measure"
+            ],
+            "agronomist_summary": "Dead heart disease is a significant threat to rice production, and prompt action is necessary to prevent yield loss."
+        },
+        "scientist_report": {
+            "primary_pathology": "Fungal infection causing vascular occlusion",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Yellowing of leaves and dead heart symptoms",
+                "Presence of fungal structures on infected tissues"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Magnaporthe oryzae",
+                "taxonomy": "Ascomycota: Magnaporthaceae",
+                "infection_mechanism": "Vascular occlusion and tissue necrosis",
+                "disease_cycle_stage": "Seedling to tillering stage"
+            },
+            "environmental_correlation": "Warm and humid conditions favor disease development",
+            "biochemical_impact": [
+                "Production of toxic compounds causing tissue necrosis",
+                "Disruption of plant defense mechanisms"
+            ],
+            "epidemiological_risk": "High risk of spread through contaminated water and soil",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies on the genetic basis of resistance in rice varieties"
+        }
+    },
+    "downy_mildew": {
+        "disease_name": "downy_mildew",
+        "disease_identity": {
+            "scientific_name": "Peronosclerospora spp.",
+            "disease_category": "Fungal disease",
+            "spread_risk": "High",
+            "contagiousness": "Yes, through spores and infected seedlings",
+            "crop_stage_affected": "Seedling to mature stage"
+        },
+        "farmer_report": {
+            "diagnosis": "Yellowing of leaves, white cottony growth on underside of leaves, and stunted growth",
+            "severity": "Moderate to severe",
+            "crop_risk": "High risk of yield loss and reduced grain quality",
+            "weather_impact": "Favorable for disease development in cool, humid weather",
+            "immediate_actions": [
+                "Remove infected plants, disinfect tools and equipment",
+                "Apply fungicides as per recommended schedule"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Azoxystrobin or Chlorothalonil",
+                "dosage": "500-750 ppm",
+                "application_method": "Foliar spray or seed treatment",
+                "estimated_cost_inr": "500-1000 INR per liter"
+            },
+            "prevention_tips": [
+                "Maintain good crop rotation, use disease-free seeds, and ensure proper irrigation and drainage",
+                "Apply fungicides as per recommended schedule"
+            ],
+            "agronomist_summary": "Downy mildew is a significant disease of rice, causing yield loss and reduced grain quality. Early detection and prompt action are crucial to minimize losses."
+        },
+        "scientist_report": {
+            "primary_pathology": "Fungal infection of the leaf tissue",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Presence of white cottony growth on underside of leaves",
+                "Yellowing of leaves and stunted growth"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Peronosclerospora spp.",
+                "taxonomy": "Oomycota",
+                "infection_mechanism": "Fungal spores infect the leaf tissue through stomata",
+                "disease_cycle_stage": "Polycyclic, with multiple generations of the pathogen"
+            },
+            "environmental_correlation": "Cool, humid weather favors disease development",
+            "biochemical_impact": [
+                "Production of toxic compounds by the pathogen, leading to cell death and tissue damage",
+                "Activation of defense mechanisms in the host plant"
+            ],
+            "epidemiological_risk": "High risk of spread through infected seedlings and spores",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies on the genetic basis of resistance to downy mildew in rice and development of resistant cultivars"
+        }
+    },
+    "hispa": {
+        "disease_name": "hispa",
+        "disease_identity": {
+            "scientific_name": "Conopomorpha cramerella",
+            "disease_category": "Insect-borne fungal disease",
+            "spread_risk": "Moderate to high",
+            "contagiousness": "High",
+            "crop_stage_affected": "Seedling to mature stage"
+        },
+        "farmer_report": {
+            "diagnosis": "Presence of small, yellowish spots on leaves and stems",
+            "severity": "Mild to severe",
+            "crop_risk": "High risk of yield loss and reduced grain quality",
+            "weather_impact": "Moisture stress and high temperatures exacerbate the disease",
+            "immediate_actions": [
+                "Remove and destroy infected plants",
+                "Apply fungicides and insecticides as per recommended schedule"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Foliar spray of chlorothalonil or mancozeb",
+                "dosage": "500-750 ppm",
+                "application_method": "Spray at 10-15 days interval",
+                "estimated_cost_inr": "500-1000 per acre"
+            },
+            "prevention_tips": [
+                "Maintain good crop hygiene and sanitation",
+                "Use resistant crop varieties and cultural practices"
+            ],
+            "agronomist_summary": "Hispa is a significant disease of rice, causing yield loss and reduced grain quality. Early detection and management are crucial to minimize its impact."
+        },
+        "scientist_report": {
+            "primary_pathology": "Fungal infection caused by Conopomorpha cramerella",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Presence of small, yellowish spots on leaves and stems",
+                "Fungal growth and sporulation on infected tissues"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Conopomorpha cramerella",
+                "taxonomy": "Fungi: Lepidoptera",
+                "infection_mechanism": "Fungal spores infect plant tissues through wounds or natural openings",
+                "disease_cycle_stage": "Fungal growth and sporulation occur in infected tissues"
+            },
+            "environmental_correlation": "Moisture stress and high temperatures exacerbate the disease",
+            "biochemical_impact": [
+                "Production of toxic compounds by the fungus",
+                "Induction of plant defense responses"
+            ],
+            "epidemiological_risk": "High risk of spread through infected plant materials and contaminated water",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies are needed to understand the molecular mechanisms of hispa disease and develop more effective management strategies."
+        }
+    },
+    "normal": {
+        "disease_name": "normal",
+        "disease_identity": {
+            "scientific_name": "",
+            "disease_category": "Healthy",
+            "spread_risk": "Low",
+            "contagiousness": "Non-contagious",
+            "crop_stage_affected": "All stages"
+        },
+        "farmer_report": {
+            "diagnosis": "Healthy crop",
+            "severity": "No symptoms",
+            "crop_risk": "Low",
+            "weather_impact": "No impact",
+            "immediate_actions": [
+                "Monitor crop regularly",
+                "Maintain good agricultural practices"
+            ],
+            "treatment_plan": {
+                "recommended_product": "",
+                "dosage": "",
+                "application_method": "",
+                "estimated_cost_inr": ""
+            },
+            "prevention_tips": [
+                "Maintain proper irrigation",
+                "Fertilize as per soil test recommendations"
+            ],
+            "agronomist_summary": "Healthy crop requires regular monitoring and good agricultural practices to maintain its health."
+        },
+        "scientist_report": {
+            "primary_pathology": "No pathology",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Normal leaf morphology",
+                "No visible symptoms"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "",
+                "taxonomy": "",
+                "infection_mechanism": "",
+                "disease_cycle_stage": ""
+            },
+            "environmental_correlation": "No correlation with environmental factors",
+            "biochemical_impact": [
+                "No impact on biochemical processes",
+                "Normal nutrient uptake"
+            ],
+            "epidemiological_risk": "Low",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further research is not required for this disease."
+        }
+    },
+    "tungro": {
+        "disease_name": "tungro",
+        "disease_identity": {
+            "scientific_name": "Babesia oryzae and Rice tungro spherical virus (RTSV)",
+            "disease_category": "Viral disease",
+            "spread_risk": "High",
+            "contagiousness": "Yes, through insect vectors (green leafhoppers)",
+            "crop_stage_affected": "Vegetative and reproductive stages"
+        },
+        "farmer_report": {
+            "diagnosis": "Yellowing or stunting of plants, with or without leaf distortion",
+            "severity": "Moderate to severe",
+            "crop_risk": "High risk of yield loss and reduced grain quality",
+            "weather_impact": "Disease severity is influenced by temperature, humidity, and rainfall",
+            "immediate_actions": [
+                "Remove and destroy infected plants",
+                "Apply insecticides to control green leafhopper populations"
+            ],
+            "treatment_plan": {
+                "recommended_product": "Fungicides or insecticides (e.g., pyriproxyfen)",
+                "dosage": "Follow label instructions",
+                "application_method": "Spray or drench",
+                "estimated_cost_inr": "500-1000"
+            },
+            "prevention_tips": [
+                "Use resistant varieties",
+                "Maintain good agricultural practices (GAPs)"
+            ],
+            "agronomist_summary": "Tungro is a significant disease affecting rice crops worldwide. Early detection and management are crucial to minimize yield losses."
+        },
+        "scientist_report": {
+            "primary_pathology": "Systemic infection of rice plants by RTSV and B. oryzae",
+            "confidence_interpretation": "Analyzed via CNN model.",
+            "visual_feature_analysis": [
+                "Yellowing or stunting of plants",
+                "Leaf distortion or malformation"
+            ],
+            "pathogen_profile": {
+                "scientific_name": "Rice tungro spherical virus (RTSV) and Babesia oryzae",
+                "taxonomy": "RTSV: Viruses; B. oryzae: Protozoa",
+                "infection_mechanism": "RTSV: Systemic infection through insect vectors; B. oryzae: Systemic infection through insect vectors",
+                "disease_cycle_stage": "RTSV: Persistent in insect vectors; B. oryzae: Persistent in insect vectors"
+            },
+            "environmental_correlation": "Temperature (25-35\u00b0C), humidity (60-80%), and rainfall (500-1000 mm) influence disease severity",
+            "biochemical_impact": [
+                "Photosynthesis inhibition",
+                "Reduced plant growth and yield"
+            ],
+            "epidemiological_risk": "High risk of disease spread through insect vectors and contaminated water",
+            "model_reasoning": "Pattern matching confirmed diagnosis.",
+            "research_recommendation": "Further studies on the molecular mechanisms of RTSV and B. oryzae infection, and the development of resistant rice varieties"
+        }
+    }
+}

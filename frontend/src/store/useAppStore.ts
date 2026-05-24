@@ -210,6 +210,7 @@ export interface ScanResult {
   };
 
   // New intelligence fields
+  diseaseIdentity?: DiseaseIdentity;
   farmerReport?: FarmerReport;
   scientistReport?: ScientistReport;
   
@@ -257,6 +258,15 @@ export interface RawScanResult {
     chemical_composition?: { compound: string; percentage: number }[];
   };
   scientistData?: ScanResult['scientistData'];
+  
+  diseaseIdentity?: DiseaseIdentity;
+  
+  scientific_name?: string;
+  disease_category?: string;
+  spread_risk?: string;
+  contagiousness?: string;
+  crop_stage_affected?: string;
+
   // New role-specific fields
   farmer_report?: FarmerReport;
   farmerReport?: FarmerReport;
@@ -331,6 +341,14 @@ export function mapBackendToScanResult(item: RawScanResult, previewUrl?: string)
     } : item.scientistData,
 
     // New role-specific reports
+    diseaseIdentity: {
+      display_name: item.diseaseName || item.detected_disease || 'Unknown',
+      scientific_name: item.scientific_name || '',
+      disease_category: item.disease_category || '',
+      spread_risk: item.spread_risk || '',
+      contagiousness: item.contagiousness || '',
+      crop_stage_affected: item.crop_stage_affected || '',
+    },
     farmerReport: item.farmer_report || item.farmerReport,
     scientistReport: item.scientist_report || item.scientistReport,
     

@@ -34,33 +34,65 @@ export default function ScanResultDashboard({ result, isFarmer, onNewScan }: Pro
         </button>
       </div>
 
-      {/* Scanned image */}
-      <div className="glass rounded-2xl p-4 relative overflow-hidden">
-        <img
-          src={result.imageUrl}
-          alt="Scanned leaf"
-          className="w-full max-h-64 object-contain rounded-xl bg-muted/50"
-        />
-        {result.imageQuality && result.imageQuality.scan_quality_score > 0 && (
-          <div className={`absolute top-6 right-6 px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md ${
-            result.imageQuality.quality_grade === 'excellent' || result.imageQuality.quality_grade === 'good'
-              ? 'bg-emerald-500/20 text-emerald-300'
-              : result.imageQuality.quality_grade === 'fair'
-                ? 'bg-amber-500/20 text-amber-300'
-                : 'bg-red-500/20 text-red-300'
-          }`}>
-            📷 {result.imageQuality.scan_quality_score}/100
-          </div>
-        )}
-      </div>
+      {/* Scanned image & Heatmap */}
+      <div className="glass rounded-2xl p-4 relative overflow-hidden flex flex-col md:flex-row gap-4">
+        <div className="relative w-full md:w-1/2 rounded-xl overflow-hidden group">
+          <img
+            src={result.imageUrl}
+            alt="Scanned leaf"
+            className="w-full h-full max-h-64 object-cover rounded-xl bg-muted/50 transition-transform duration-500 group-hover:scale-105"
+          />
+          {/* CSS-based simulated Heatmap for Scientist Mode */}
+          {!isFarmer && (
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-red-500/20 to-purple-500/30 mix-blend-overlay pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          )}
+          {result.imageQuality && result.imageQuality.scan_quality_score > 0 && (
+            <div className={`absolute top-4 right-4 px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md shadow-lg ${
+              result.imageQuality.quality_grade === 'excellent' || result.imageQuality.quality_grade === 'good'
+                ? 'bg-emerald-500/80 text-white'
+                : result.imageQuality.quality_grade === 'fair'
+                  ? 'bg-amber-500/80 text-white'
+                  : 'bg-red-500/80 text-white'
+            }`}>
+              📷 {result.imageQuality.scan_quality_score}/100 Quality
+            </div>
+          )}
+          {!isFarmer && (
+            <div className="absolute bottom-4 left-4 px-2 py-1 bg-black/60 text-white text-[10px] uppercase font-bold tracking-wider rounded backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+              AI Heatmap Active
+            </div>
+          )}
+        </div>
 
-      {/* Core Inference Header (ML Vision model) */}
-      <DiseaseHeader
-        diseaseName={result.diseaseName}
-        diseaseIdentity={result.diseaseIdentity}
-        severity={result.severity}
-        confidence={result.confidence}
-      />
+        {/* Dynamic Progression Meter (Right Side of Image) */}
+        <div className="w-full md:w-1/2 flex flex-col justify-center space-y-4 px-2">
+          <DiseaseHeader
+            diseaseName={result.diseaseName}
+            diseaseIdentity={result.diseaseIdentity}
+            severity={result.severity}
+            confidence={result.confidence}
+          />
+
+          <div className="bg-accent/40 rounded-xl p-4 border border-border/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase">Disease Progression</span>
+              <span className="text-xs font-bold">{result.severity}</span>
+            </div>
+            <div className="h-2 w-full bg-secondary/20 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: result.severity.toLowerCase() === 'high' ? '90%' : result.severity.toLowerCase() === 'medium' ? '50%' : '10%' }}
+                className={`h-full ${result.severity.toLowerCase() === 'high' ? 'bg-red-500' : result.severity.toLowerCase() === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+              />
+            </div>
+            {isFarmer ? (
+              <p className="text-[10px] text-muted-foreground mt-2 mt-1">Recovery Chance: {result.severity.toLowerCase() === 'high' ? 'Low without immediate action' : 'Very Good'}</p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground mt-2 mt-1">Necrotic progression estimation based on lesion geometry.</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Legacy/Standard ML Panels */}
       <div className="grid md:grid-cols-2 gap-5">
