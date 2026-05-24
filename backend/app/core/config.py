@@ -68,7 +68,12 @@ class TestingSettings(BaseConfig):
 class ProductionSettings(BaseConfig):
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
-    CORS_ORIGINS: List[str] = ["https://agricosmo.com", "https://app.agricosmo.com"]
+    CORS_ORIGINS: List[str] = [
+        "https://agricosmo.com", 
+        "https://app.agricosmo.com",
+        "https://agricosmoai.vercel.app",
+        "https://agricosmoai-oyt3tar92-rathanraj123s-projects.vercel.app"
+    ]
 
 @lru_cache
 def get_settings() -> BaseConfig:
