@@ -13,8 +13,9 @@ if settings.DATABASE_URL and "postgresql" in settings.DATABASE_URL:
     engine_kwargs["connect_args"] = {
         "timeout": 10.0,
         "command_timeout": 10.0,
-        "prepared_statement_cache_size": 0,
+        "statement_cache_size": 0,
     }
+    engine_kwargs["prepared_statement_cache_size"] = 0
 
 engine = create_async_engine(
     settings.DATABASE_URL,
