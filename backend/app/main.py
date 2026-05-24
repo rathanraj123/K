@@ -140,11 +140,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(prometheus_router)  # Prometheus /metrics endpoint
 
-# Static Files
-UPLOAD_DIR = "static/uploads"
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
-app.mount("/api/v1/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+# Removed local StaticFiles mounting as we now store images as Base64 in PostgreSQL
 
 @app.get("/health", tags=["System"])
 async def health_check():

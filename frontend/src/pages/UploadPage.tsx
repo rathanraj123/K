@@ -31,58 +31,42 @@ async function waitForCompletedDetection(initial: RawScanResult): Promise<RawSca
   throw new Error('Analysis is still running. Please check History in a moment.');
 }
 
+function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while(n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
+
 export default function UploadPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
-  const [result, setResult] = useState<ScanResult | null>(null);
   const [cropType, setCropType] = useState('Rice');
   const [region, setRegion] = useState('');
-  const { addScan, userRole, token, fetchHistory } = useAppStore();
+  
+  const { 
+    addScan, 
+    userRole, 
+    token, 
+    fetchHistory,
+    currentScan: result,
+    setCurrentScan: setResult,
+    uploadPreview: preview,
+    setUploadPreview: setPreview
+  } = useAppStore();
+  
   const setScanning = useUIStore((state) => state.setScanning);
   const { location: geoLocation, status: geoStatus, setRegionFallback } = useGeolocation();
 
   useEffect(() => {
     if (token) fetchHistory();
   }, [fetchHistory, token]);
-
-  // Restore latest scan from localStorage and sync with backend
-  useEffect(() => {
-    const cachedScan = localStorage.getItem('latestScanResult');
-    if (cachedScan) {
-      try {
-        const parsed = JSON.parse(cachedScan);
-        setResult(parsed);
-        if (parsed.imageUrl) setPreview(parsed.imageUrl);
-      } catch (e) {
-        console.error('Failed to parse cached scan', e);
-      }
-    }
-
-    const fetchLatestScan = async () => {
-      if (!token) return;
-      try {
-        const item = await api.get<RawScanResult | null>('/detection/latest');
-        if (item && item.id) {
-          const mappedScan = mapBackendToScanResult(item);
-          localStorage.setItem('latestScanResult', JSON.stringify(mappedScan));
-          setResult(mappedScan);
-          setPreview(mappedScan.imageUrl);
-        } else {
-          // If backend has no scans for this user, clear the state to prevent cross-account leakage
-          setResult(null);
-          setPreview(null);
-          localStorage.removeItem('latestScanResult');
-        }
-      } catch (error) {
-        console.warn('Could not sync latest scan from backend:', error);
-      }
-    };
-
-    fetchLatestScan();
-  }, [token]);
 
   // Sync region selection to geolocation fallback
   useEffect(() => {
@@ -115,12 +99,11 @@ export default function UploadPage() {
       return;
     }
 
-    setFile(f);
     setResult(null);
     const reader = new FileReader();
     reader.onload = (e) => setPreview(e.target?.result as string);
     reader.readAsDataURL(f);
-  }, []);
+  }, [setPreview, setResult]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -130,12 +113,13 @@ export default function UploadPage() {
   }, [handleFile]);
 
   const handleAnalyze = async () => {
-    if (!file || !preview) return;
+    if (!preview) return;
     setIsProcessing(true);
     setProcessingStep(0);
 
     const formData = new FormData();
-    formData.append('file', file);
+    const fileToUpload = dataURLtoFile(preview, 'upload.jpg');
+    formData.append('file', fileToUpload);
 
     // Append geolocation data
     if (geoLocation) {
@@ -169,7 +153,7 @@ export default function UploadPage() {
 
       addScan(scan);
       setResult(scan);
-      localStorage.setItem('latestScanResult', JSON.stringify(scan));
+      
       toast({
         title: 'Scan complete',
         description: `${scan.diseaseName.replace(/_/g, ' ')} detected with ${scan.confidence.toFixed(1)}% confidence.`,
@@ -190,10 +174,8 @@ export default function UploadPage() {
   };
 
   const clearFile = () => {
-    setFile(null);
     setPreview(null);
     setResult(null);
-    localStorage.removeItem('latestScanResult');
   };
 
   return (
@@ -304,8 +286,8 @@ export default function UploadPage() {
                     <div className="flex items-center gap-3">
                       <ImageIcon className="w-5 h-5 text-muted-foreground" />
                       <div>
-                        <p className="font-medium text-sm">{file?.name}</p>
-                        <p className="text-xs text-muted-foreground">{file ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : ''}</p>
+                        <p className="font-medium text-sm">Uploaded Image</p>
+                        <p className="text-xs text-muted-foreground">{preview ? (preview.length * 0.75 / 1024 / 1024).toFixed(2) + ' MB' : ''}</p>
                       </div>
                     </div>
                     <button onClick={handleAnalyze} disabled={isProcessing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground font-semibold text-sm disabled:opacity-70 hover:opacity-95 transition-opacity shadow-lg">

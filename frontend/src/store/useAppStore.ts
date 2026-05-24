@@ -396,6 +396,9 @@ interface AppState {
   isLoading: boolean;
   isHydrated: boolean;
   
+  uploadPreview: string | null;
+  setUploadPreview: (preview: string | null) => void;
+
   // Chat History State
   chatThreads: ChatThread[];
   currentChatThreadId: string | null;
@@ -436,6 +439,8 @@ export const useAppStore = create<AppState>()(
       },
       currentScan: null,
       setCurrentScan: (scan) => set({ currentScan: scan }),
+      uploadPreview: null,
+      setUploadPreview: (preview) => set({ uploadPreview: preview }),
       userName: 'Researcher',
       setUserName: (name) => set({ userName: name }),
       language: 'English',
@@ -481,6 +486,7 @@ export const useAppStore = create<AppState>()(
         set({ 
           token: null, 
           currentScan: null, 
+          uploadPreview: null,
           scanHistory: [], 
           chatThreads: [], 
           currentChatThreadId: null,
@@ -498,7 +504,9 @@ export const useAppStore = create<AppState>()(
         language: state.language,
         token: state.token,
         currentChatThreadId: state.currentChatThreadId,
-        chatThreads: state.chatThreads
+        chatThreads: state.chatThreads,
+        currentScan: state.currentScan,
+        uploadPreview: state.uploadPreview
       }),
       onRehydrateStorage: () => (state) => {
         if (state) state.isHydrated = true;

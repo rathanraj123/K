@@ -54,19 +54,39 @@ async def analyze_plant_disease(
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
 
-    # Save the file locally
-    UPLOAD_DIR = "static/uploads"
-    if not os.path.exists(UPLOAD_DIR):
-        os.makedirs(UPLOAD_DIR)
-
-    file_extension = ALLOWED_IMAGE_TYPES[content_type]
-    filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    image_url = f"/api/v1/uploads/{filename}"
+    import io
+    import base64
+    from PIL import Image
 
     image_bytes = await file.read()
-    with open(file_path, "wb") as buffer:
-        buffer.write(image_bytes)
+    
+    # Compress image using PIL to avoid huge base64 strings
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        # Convert RGBA to RGB if necessary (e.g. PNGs)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+            
+        # Resize to max 800px width/height while maintaining aspect ratio
+        img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+        
+        output_buffer = io.BytesIO()
+        img.save(output_buffer, format="JPEG", quality=75)
+        compressed_bytes = output_buffer.getvalue()
+        
+        # We pass the compressed bytes to the ML pipeline to speed it up!
+        image_bytes = compressed_bytes
+        file_extension = ".jpg"
+        content_type = "image/jpeg"
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Image compression failed, using original: {e}")
+        # Fallback to original bytes
+        file_extension = ALLOWED_IMAGE_TYPES.get(content_type, ".jpg")
+
+    # Encode to base64 data URI for reliable storage across Render instances
+    base64_str = base64.b64encode(image_bytes).decode('utf-8')
+    image_url = f"data:{content_type};base64,{base64_str}"
 
     # Save the history row as 'processing'
     detection = DiseaseDetection(
