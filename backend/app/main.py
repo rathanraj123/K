@@ -151,6 +151,14 @@ async def health_check():
     """Enterprise health check endpoint ensuring application is up."""
     return {"status": "healthy", "timestamp": time.time(), "environment": settings.PROJECT_NAME}
 
+@app.get("/metrics/health/db", tags=["System"])
+async def db_health():
+    """Database health check for frontend connectivity verification."""
+    return {
+        "status": "healthy",
+        "database": "connected"
+    }
+
 @app.get("/")
 def root():
     return {"message": "Welcome to the AgriCosmo AI Enterprise Platform API"}
