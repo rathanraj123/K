@@ -168,17 +168,22 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
       let done = false;
       let threadIdAssigned = false;
+      let buffer = '';
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n\n');
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          
+          // The last element is either an empty string (if it ended with \n\n) or an incomplete chunk.
+          buffer = lines.pop() || '';
           
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.replace('data: ', '').trim();
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('data: ')) {
+              const dataStr = trimmedLine.replace('data: ', '').trim();
               if (dataStr === '[DONE]') {
                 done = true;
                 break;
@@ -205,7 +210,7 @@ export default function ChatPage() {
                 }
                 
                 // If it's a content chunk
-                if (parsed.content) {
+                if (parsed.content !== undefined) {
                   setMessages(prev => prev.map(msg => {
                     if (msg.message_id === tempAiId) {
                       return { ...msg, content: msg.content + parsed.content };
