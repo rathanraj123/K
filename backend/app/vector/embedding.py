@@ -19,7 +19,10 @@ class EmbeddingService:
                     # Offload model loading to thread to prevent blocking the event loop
                     def load_embed():
                         from fastembed import TextEmbedding
-                        return TextEmbedding(model_name=self.model_name)
+                        import os
+                        cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "model_cache")
+                        os.makedirs(cache_dir, exist_ok=True)
+                        return TextEmbedding(model_name=self.model_name, cache_dir=cache_dir)
                     
                     self.model = await asyncio.to_thread(load_embed)
                     logger.info("Embedding model loaded successfully.")
