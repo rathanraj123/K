@@ -46,6 +46,11 @@ class BaseConfig(BaseSettings):
     HUGGINGFACE_API_KEY: Optional[str] = None
     OPENWEATHER_API_KEY: Optional[str] = None
     
+    # Elasticsearch
+    ELASTICSEARCH_URL: Optional[str] = None
+    ELASTICSEARCH_API_KEY: Optional[str] = None
+    ELASTICSEARCH_ENABLED: bool = True
+    
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:8080",

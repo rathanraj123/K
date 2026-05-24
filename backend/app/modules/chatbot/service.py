@@ -63,13 +63,22 @@ class ChatbotService:
         # 2. Fetch L2 Episodic Memory (if L1 miss)
         l2_episodic = []
         if not l1_recent:
-            l2_episodic = await es_memory.get_recent_messages(session_id=session_id, user_id=user_id, limit=20)
+            try:
+                l2_episodic = await es_memory.get_recent_messages(session_id=session_id, user_id=user_id, limit=20)
+            except Exception as e:
+                logger.error(f"Elasticsearch error during get_recent_messages: {e}")
+                l2_episodic = []
             
         # 3. Generate query embedding for L3 Semantic Search
         query_embedding = await embedding_service.generate_embedding(new_message)
         
         # 4. Fetch L3 Semantic Memory (KNN)
-        l3_semantic = await es_memory.semantic_search(query_vector=query_embedding, user_id=user_id, limit=3)
+        l3_semantic = []
+        try:
+            l3_semantic = await es_memory.semantic_search(query_vector=query_embedding, user_id=user_id, limit=3)
+        except Exception as e:
+            logger.error(f"Elasticsearch error during semantic_search: {e}")
+            l3_semantic = []
         
         # 5. Build Hierarchical Context
         # Note: L5 summary logic would go here by retrieving the summary from ES

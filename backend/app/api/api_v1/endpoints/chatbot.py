@@ -21,7 +21,9 @@ async def get_chat_threads(
         sessions = await es_memory.get_session_history(user_id=str(current_user.id), limit=50)
         return sessions
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Could not retrieve chat history")
+        import logging
+        logging.getLogger(__name__).error(f"Could not retrieve chat history: {e}")
+        return []
 
 @router.get("/threads/{thread_id}/messages", response_model=List[ESChatMessage])
 async def get_thread_messages(
@@ -29,8 +31,13 @@ async def get_thread_messages(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get all messages for a specific thread from Elasticsearch."""
-    messages = await es_memory.get_recent_messages(session_id=thread_id, user_id=str(current_user.id), limit=100)
-    return messages
+    try:
+        messages = await es_memory.get_recent_messages(session_id=thread_id, user_id=str(current_user.id), limit=100)
+        return messages
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Could not retrieve thread messages: {e}")
+        return []
 
 @router.delete("/threads/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_chat_thread(
@@ -38,7 +45,11 @@ async def delete_chat_thread(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> None:
     """Delete a chat thread from Elasticsearch."""
-    await es_memory.delete_session(session_id=thread_id, user_id=str(current_user.id))
+    try:
+        await es_memory.delete_session(session_id=thread_id, user_id=str(current_user.id))
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Could not delete chat thread: {e}")
 
 @router.post("/chat")
 async def chat_with_agricosmo_stream(
@@ -62,7 +73,15 @@ async def chat_with_agricosmo_stream(
         content=new_msg_content,
         importance_score=5 # Default
     )
-    background_tasks.add_task(es_memory.add_message, user_msg_es)
+    
+    async def _safe_add_message(msg):
+        try:
+            await es_memory.add_message(msg)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to save User message to ES: {e}")
+
+    background_tasks.add_task(_safe_add_message, user_msg_es)
     
     # 2. Setup Context
     context = request.context or {}
