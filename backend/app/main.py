@@ -155,9 +155,7 @@ async def health_check():
 async def db_health():
     """Database health check for frontend connectivity verification."""
     return {
-        "connected": True,
-        "status": "healthy",
-        "database": "connected"
+        "connected": True
     }
 
 @app.get("/")
