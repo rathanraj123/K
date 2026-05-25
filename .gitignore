@@ -87,3 +87,5 @@ Thumbs.db
 elasticsearch.zip
 temp_error.txt
 *.tflite
+# Cleanup Backup
+_cleanup_backup_phase2/
