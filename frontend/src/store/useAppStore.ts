@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api, apiAssetUrl } from '@/lib/api';
+import { safeDate } from '@/lib/utils';
 
 export type UserRole = 'farmer' | 'scientist' | 'admin';
 
@@ -151,9 +152,15 @@ export interface FarmerReport {
     dosage: string;
     application_method: string;
     estimated_cost_inr: string;
+    why_this_treatment?: string;
   };
   prevention_tips: string[];
   agronomist_summary: string;
+  farmer_risk_score?: {
+    crop_risk_score: number;
+    estimated_yield_loss: string;
+    urgency_level: string;
+  };
 }
 
 export interface ScientistReport {
@@ -214,10 +221,27 @@ export interface ScanResult {
   farmerReport?: FarmerReport;
   scientistReport?: ScientistReport;
   
+  uncertaintyReasons?: string[];
+  confidenceBreakdown?: { label: string; value: number }[];
+  evolutionPrediction?: {
+    spread_risk_next_7_days: string;
+    expected_infection_growth_pct: number;
+    recommended_intervention_window: string;
+  };
+  escalateToExpert?: boolean;
+  
   // Geolocation
   scanLatitude?: number;
   scanLongitude?: number;
   scanLocationName?: string;
+
+  explainabilityMeta?: {
+    heatmap_url?: string | null;
+    key_features_detected?: string[];
+    infected_area_pct?: number;
+    computed_severity?: string;
+  };
+  similarDiseases?: { disease_name: string; confidence: number }[];
 }
 
 export interface RawScanResult {
@@ -273,6 +297,11 @@ export interface RawScanResult {
   scientist_report?: ScientistReport;
   scientistReport?: ScientistReport;
   
+  uncertainty_reasons?: string[];
+  confidence_breakdown?: { label: string; value: number }[];
+  evolution_prediction?: ScanResult['evolutionPrediction'];
+  escalate_to_expert?: boolean;
+  
   scan_latitude?: number;
   scanLatitude?: number;
   scan_longitude?: number;
@@ -280,6 +309,16 @@ export interface RawScanResult {
   scan_location_name?: string;
   scanLocationName?: string;
   status?: string;
+
+  explainability_meta?: {
+    heatmap_url?: string | null;
+    key_features_detected?: string[];
+    infected_area_pct?: number;
+    computed_severity?: string;
+  };
+  explainabilityMeta?: ScanResult['explainabilityMeta'];
+  similar_diseases?: Array<{ disease_name?: string; confidence?: number }>;
+  similarDiseases?: ScanResult['similarDiseases'];
 }
 
 function normalizeSeverity(value?: string): ScanResult['severity'] {
@@ -313,7 +352,7 @@ export function mapBackendToScanResult(item: RawScanResult, previewUrl?: string)
       ? item.cosmetic_insights.map((c) => ({ compound: c.compound || '', useCase: c.use_case || '' }))
       : (item.cosmeticInsights || []),
     explanation: item.explanation || '',
-    createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+    createdAt: item.created_at || item.createdAt || safeDate().toISOString(),
     cropType: item.crop_type || item.cropType,
     region: item.region,
 
@@ -352,10 +391,23 @@ export function mapBackendToScanResult(item: RawScanResult, previewUrl?: string)
     farmerReport: item.farmer_report || item.farmerReport,
     scientistReport: item.scientist_report || item.scientistReport,
     
+    // Tracking Intelligence
+    uncertaintyReasons: item.uncertainty_reasons,
+    confidenceBreakdown: item.confidence_breakdown,
+    evolutionPrediction: item.evolution_prediction,
+    escalateToExpert: item.escalate_to_expert,
+    
     // Geolocation mapping
     scanLatitude: item.scan_latitude || item.scanLatitude,
     scanLongitude: item.scan_longitude || item.scanLongitude,
     scanLocationName: item.scan_location_name || item.scanLocationName,
+
+    // Explainability mapping
+    explainabilityMeta: item.explainability_meta || item.explainabilityMeta,
+    similarDiseases: (item.similar_diseases || item.similarDiseases || []).map(sd => ({
+      disease_name: sd.disease_name || '',
+      confidence: sd.confidence || 0
+    })),
   };
 }
 
@@ -373,6 +425,7 @@ export interface ChatMessage {
 export interface ChatThread {
   id: string;
   title: string;
+  is_pinned?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -405,8 +458,26 @@ interface AppState {
   setChatThreads: (threads: ChatThread[]) => void;
   setCurrentChatThreadId: (id: string | null) => void;
   fetchChatThreads: () => Promise<void>;
+  updateChatThread: (id: string, data: {title?: string, is_pinned?: boolean}) => Promise<void>;
   deleteChatThread: (id: string) => Promise<void>;
   logout: () => void;
+  
+  // Offline Sync State
+  offlineQueue: QueuedScan[];
+  addToOfflineQueue: (scan: Omit<QueuedScan, 'id' | 'timestamp'>) => void;
+  removeFromOfflineQueue: (id: string) => void;
+  syncOfflineQueue: () => Promise<void>;
+}
+
+export interface QueuedScan {
+  id: string;
+  imageBlobUrl: string;
+  base64Data: string;
+  lat: number | null;
+  lon: number | null;
+  cropType: string;
+  language: string;
+  timestamp: string;
 }
 
 export const useAppStore = create<AppState>()(
@@ -469,6 +540,18 @@ export const useAppStore = create<AppState>()(
           console.error('Failed to fetch chat threads:', error);
         }
       },
+      updateChatThread: async (id, data) => {
+        try {
+          const updated = await api.patch<ChatThread>(`/chatbot/threads/${id}`, data);
+          if (updated) {
+            set((s) => ({
+              chatThreads: s.chatThreads.map(t => t.id === id ? { ...t, ...updated } : t)
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to update chat thread:', error);
+        }
+      },
       deleteChatThread: async (id) => {
         try {
           await api.delete(`/chatbot/threads/${id}`);
@@ -493,6 +576,55 @@ export const useAppStore = create<AppState>()(
           userName: 'Researcher',
           userRole: 'farmer'
         });
+      },
+      offlineQueue: [],
+      addToOfflineQueue: (scan) => {
+        const queuedItem: QueuedScan = {
+          ...scan,
+          id: `offline-${Date.now()}`,
+          timestamp: safeDate().toISOString(),
+        };
+        set((s) => ({ offlineQueue: [...s.offlineQueue, queuedItem] }));
+      },
+      removeFromOfflineQueue: (id) => set((s) => ({
+        offlineQueue: s.offlineQueue.filter((item) => item.id !== id)
+      })),
+      syncOfflineQueue: async () => {
+        const queue = get().offlineQueue;
+        if (queue.length === 0 || !navigator.onLine || !get().token) return;
+        
+        console.log(`Syncing ${queue.length} offline scans...`);
+        for (const item of queue) {
+          try {
+            // Convert base64 data to blob
+            const base64Parts = item.base64Data.split(',');
+            const mime = base64Parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+            const byteString = atob(base64Parts[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mime });
+            
+            // Build form data
+            const formData = new FormData();
+            formData.append('file', blob, `offline_scan_${item.id}.jpg`);
+            if (item.lat !== null) formData.append('lat', String(item.lat));
+            if (item.lon !== null) formData.append('lon', String(item.lon));
+            formData.append('crop_type', item.cropType);
+            formData.append('language', item.language);
+
+            const response = await api.post<RawScanResult>('/detection/analyze', formData);
+            if (response && response.id) {
+              const mapped = mapBackendToScanResult(response);
+              get().addScan(mapped);
+              get().removeFromOfflineQueue(item.id);
+            }
+          } catch (error) {
+            console.error(`Failed to sync offline scan ${item.id}:`, error);
+          }
+        }
       }
     }),
     {
@@ -506,7 +638,8 @@ export const useAppStore = create<AppState>()(
         currentChatThreadId: state.currentChatThreadId,
         chatThreads: state.chatThreads,
         currentScan: state.currentScan,
-        uploadPreview: state.uploadPreview
+        uploadPreview: state.uploadPreview,
+        offlineQueue: state.offlineQueue
       }),
       onRehydrateStorage: () => (state) => {
         if (state) state.isHydrated = true;

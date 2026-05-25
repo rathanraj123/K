@@ -22,6 +22,7 @@ async def run_detection_async(
     lon: Optional[float] = None,
     crop_type: str = "Rice",
     user_role: str = "farmer",
+    language: str = "English",
 ):
     """
     Full intelligence pipeline execution as a background task.
@@ -30,7 +31,13 @@ async def run_detection_async(
     try:
         start_time = time.time()
         result = await detection_service.predict_disease(
-            image_bytes, lat=lat, lon=lon, crop_type=crop_type, user_role=user_role
+            image_bytes,
+            lat=lat,
+            lon=lon,
+            crop_type=crop_type,
+            user_role=user_role,
+            language=language,
+            detection_id=detection_id,
         )
         duration_ms = (time.time() - start_time) * 1000
 
@@ -74,7 +81,10 @@ async def run_detection_async(
                     detection.crop_stage_affected = disease_identity.get("crop_stage_affected")
 
                 # ── New Role-Specific Intelligence ───────────────
-                detection.farmer_report = result.get("farmer_report")
+                farmer_report = result.get("farmer_report")
+                if farmer_report and isinstance(farmer_report, dict) and "farmer_risk_score" in result:
+                    farmer_report["farmer_risk_score"] = result["farmer_risk_score"]
+                detection.farmer_report = farmer_report
                 detection.scientist_report = result.get("scientist_report")
                 
                 # Clear legacy fields so we don't save garbage
@@ -83,7 +93,7 @@ async def run_detection_async(
                 detection.agronomist_recommendation = None
                 detection.yield_loss_estimate = None
                 detection.disease_timeline = None
-                detection.similar_diseases = None
+                detection.similar_diseases = result.get("similar_diseases")
                 detection.detailed_treatments = None
                 detection.smart_products = None
 
@@ -260,4 +270,42 @@ def aggregate_analytics(self, event_type: str, payload: dict):
     except Exception as exc:
         logger.error(f"Analytics aggregation failed: {exc}")
         self.retry(exc=exc, countdown=10)
+
+
+async def process_model_telemetry_and_drift(feedback_id: str, corrected_disease: Optional[str], rating: Optional[int]):
+    """
+    Continuous Learning pipeline step:
+    Aggregates user rating and label corrections, computes precision drift,
+    and updates the AI model metrics tables.
+    """
+    logger.info(f"Processing telemetry drift for feedback {feedback_id}...")
+    try:
+        from app.models.agriculture import DetectionFeedback
+        from app.models.enterprise import AiModelMetric
+        from sqlalchemy import select
+        
+        async with AsyncSessionLocal() as db:
+            # 1. Calculate accuracy statistics from all feedback
+            feedbacks_res = await db.execute(select(DetectionFeedback))
+            feedbacks = feedbacks_res.scalars().all()
+            
+            total = len(feedbacks)
+            mismatches = sum(1 for fb in feedbacks if fb.corrected_disease is not None)
+            
+            accuracy = (total - mismatches) / total if total > 0 else 1.0
+            
+            # 2. Insert metric entry showing new accuracy level
+            metric = AiModelMetric(
+                model_name="disease-detection-cnn",
+                inference_time_ms=0.0,
+                confidence_score=accuracy,
+                status="success",
+                error_message=f"Continuous feedback loop check. Feedbacks count: {total}. Corrected label mismatches: {mismatches}. Latest rating: {rating or 'N/A'}"
+            )
+            db.add(metric)
+            await db.commit()
+            logger.info(f"Model metric logged: accuracy={accuracy:.2f} based on {total} feedback records.")
+            
+    except Exception as e:
+        logger.error(f"Failed to process model telemetry drift: {e}")
 

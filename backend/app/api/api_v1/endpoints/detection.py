@@ -8,8 +8,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
-from app.schemas.agriculture import DiseaseDetectionResponse
-from app.models.agriculture import DiseaseDetection
+from app.schemas.agriculture import DiseaseDetectionResponse, DetectionFeedbackCreate, DetectionFeedbackResponse, TreatmentTrackCreate, TreatmentTrackResponse
+from app.models.agriculture import DiseaseDetection, DetectionFeedback
+from app.models.treatment import TreatmentTrack
 from app.models.user import User
 from app.db.session import get_db
 from fastapi import BackgroundTasks
@@ -31,6 +32,7 @@ async def analyze_plant_disease(
     lon: Optional[float] = Form(None),
     crop_type: Optional[str] = Form("Rice"),
     location_name: Optional[str] = Form(None),
+    language: Optional[str] = Form("English"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
@@ -54,44 +56,25 @@ async def analyze_plant_disease(
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="File too large. Maximum size is 10MB.")
 
-    import io
-    import base64
-    from PIL import Image
-
+    from app.services.storage import storage_service
+    
     image_bytes = await file.read()
     
-    # Compress image using PIL to avoid huge base64 strings
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        # Convert RGBA to RGB if necessary (e.g. PNGs)
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-            
-        # Resize to max 800px width/height while maintaining aspect ratio
-        img.thumbnail((800, 800), Image.Resampling.LANCZOS)
-        
-        output_buffer = io.BytesIO()
-        img.save(output_buffer, format="JPEG", quality=75)
-        compressed_bytes = output_buffer.getvalue()
-        
-        # We pass the compressed bytes to the ML pipeline to speed it up!
-        image_bytes = compressed_bytes
-        file_extension = ".jpg"
-        content_type = "image/jpeg"
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"Image compression failed, using original: {e}")
-        # Fallback to original bytes
-        file_extension = ALLOWED_IMAGE_TYPES.get(content_type, ".jpg")
-
-    # Encode to base64 data URI for reliable storage across Render instances
-    base64_str = base64.b64encode(image_bytes).decode('utf-8')
-    image_url = f"data:{content_type};base64,{base64_str}"
+    # Upload to Supabase asynchronously (falls back to base64 if not configured)
+    storage_result = await storage_service.upload_image(
+        file_bytes=image_bytes,
+        content_type=content_type,
+        user_id=current_user.id
+    )
+    
+    image_url = storage_result.get("url")
+    thumbnail_url = storage_result.get("thumbnail_url")
 
     # Save the history row as 'processing'
     detection = DiseaseDetection(
         user_id=current_user.id,
         image_url=image_url,
+        thumbnail_url=thumbnail_url,
         status="processing",
         scan_latitude=lat,
         scan_longitude=lon,
@@ -131,6 +114,7 @@ async def analyze_plant_disease(
         lon=lon,
         crop_type=crop_type or "Rice",
         user_role=current_user.role,
+        language=language or "English",
     )
     
     return detection
@@ -183,3 +167,119 @@ async def get_detection(
     if not detection:
         raise HTTPException(status_code=404, detail="Detection not found")
     return detection
+
+
+@router.post("/{detection_id}/feedback", response_model=DetectionFeedbackResponse)
+async def submit_detection_feedback(
+    detection_id: str,
+    feedback_in: DetectionFeedbackCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Submit user feedback and label corrections for continuous model learning.
+    """
+    # 1. Verify detection exists
+    result = await db.execute(
+        select(DiseaseDetection)
+        .where(DiseaseDetection.user_id == current_user.id, DiseaseDetection.id == detection_id)
+    )
+    detection = result.scalars().first()
+    if not detection:
+        raise HTTPException(status_code=404, detail="Detection not found")
+
+    # 2. Add feedback record
+    feedback = DetectionFeedback(
+        detection_id=detection_id,
+        corrected_disease=feedback_in.corrected_disease,
+        rating=feedback_in.rating,
+        comments=feedback_in.comments
+    )
+    db.add(feedback)
+    await db.commit()
+    await db.refresh(feedback)
+
+    # 3. Simulate continuous learning pipeline trigger in background
+    from app.workers.tasks import process_model_telemetry_and_drift
+    background_tasks.add_task(
+        process_model_telemetry_and_drift,
+        str(feedback.id),
+        feedback_in.corrected_disease,
+        feedback_in.rating
+    )
+
+    return feedback
+
+@router.post("/{detection_id}/treatment", response_model=TreatmentTrackResponse)
+async def submit_treatment_progress(
+    detection_id: str,
+    track_in: TreatmentTrackCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Log or update treatment progress for a specific scan.
+    """
+    # Verify detection belongs to user
+    result = await db.execute(
+        select(DiseaseDetection)
+        .where(DiseaseDetection.user_id == current_user.id, DiseaseDetection.id == detection_id)
+    )
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="Detection not found")
+
+    # Check if a track already exists
+    track_result = await db.execute(
+        select(TreatmentTrack).where(TreatmentTrack.detection_id == detection_id)
+    )
+    track = track_result.scalars().first()
+
+    if track:
+        # Update existing
+        track.treatment_applied = track_in.treatment_applied
+        track.recovery_progress = track_in.recovery_progress
+        if track_in.feedback_rating is not None:
+            track.feedback_rating = track_in.feedback_rating
+        if track_in.comments is not None:
+            track.comments = track_in.comments
+    else:
+        # Create new
+        track = TreatmentTrack(
+            detection_id=detection_id,
+            treatment_applied=track_in.treatment_applied,
+            recovery_progress=track_in.recovery_progress,
+            feedback_rating=track_in.feedback_rating,
+            comments=track_in.comments
+        )
+        db.add(track)
+
+    await db.commit()
+    await db.refresh(track)
+    return track
+
+@router.get("/{detection_id}/treatment", response_model=TreatmentTrackResponse)
+async def get_treatment_progress(
+    detection_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Retrieve treatment progress for a specific scan.
+    """
+    # Verify detection belongs to user
+    result = await db.execute(
+        select(DiseaseDetection)
+        .where(DiseaseDetection.user_id == current_user.id, DiseaseDetection.id == detection_id)
+    )
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="Detection not found")
+
+    track_result = await db.execute(
+        select(TreatmentTrack).where(TreatmentTrack.detection_id == detection_id)
+    )
+    track = track_result.scalars().first()
+    if not track:
+        raise HTTPException(status_code=404, detail="Treatment track not found")
+
+    return track

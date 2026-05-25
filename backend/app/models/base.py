@@ -13,3 +13,4 @@ from app.models.enterprise import (  # noqa
     ActivityLog, ApiMetric, AiModelMetric, Session, AdminAction,
     DiseaseStatistic, RealtimeEvent, DailyScanStat, HourlyApiMetric, ActiveUserMetric
 )
+from app.models.treatment import TreatmentTrack  # noqa

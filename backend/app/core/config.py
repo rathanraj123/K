@@ -46,6 +46,10 @@ class BaseConfig(BaseSettings):
     HUGGINGFACE_API_KEY: Optional[str] = None
     OPENWEATHER_API_KEY: Optional[str] = None
     
+    # Supabase Storage
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_KEY: Optional[str] = None
+    
     # Elasticsearch
     ELASTICSEARCH_URL: Optional[str] = None
     ELASTICSEARCH_API_KEY: Optional[str] = None

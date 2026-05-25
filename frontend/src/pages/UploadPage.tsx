@@ -1,17 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Image as ImageIcon, X, Loader2, Sparkles, CheckCircle2, Mic } from 'lucide-react';
+import { Upload, X, Loader2, Sparkles, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, ChevronLeft, Beaker, Leaf, FlaskConical, Plus } from 'lucide-react';
 import { useAppStore, ScanResult, RawScanResult, mapBackendToScanResult } from '@/store/useAppStore';
-import { useUIStore } from '@/store/useUIStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { api } from '@/lib/api';
-import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import ScanResultDashboard from '@/components/scan/ScanResultDashboard';
+import { cn } from '@/lib/utils';
 
 const CROP_TYPES = ['Rice', 'Wheat', 'Tomato', 'Potato', 'Cotton', 'Maize', 'Sugarcane', 'Other'];
-const REGIONS = ['North India', 'South India', 'East India', 'West India', 'Central India', 'Other'];
-const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 60;
 
@@ -19,302 +19,295 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function waitForCompletedDetection(initial: RawScanResult): Promise<RawScanResult> {
   let response = initial;
-
   for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt += 1) {
-    if (response.status !== 'processing') return response;
+    if (response.status !== 'processing') {
+      if (response.status === 'failed') {
+        throw new Error(response.explanation || 'AI pipeline failed due to low image quality or no leaf detected.');
+      }
+      return response;
+    }
     if (!response.id) throw new Error('Backend did not return a scan ID.');
-
     await sleep(POLL_INTERVAL_MS);
     response = await api.get<RawScanResult>(`/detection/${response.id}`);
   }
-
-  throw new Error('Analysis is still running. Please check History in a moment.');
+  throw new Error('Analysis timed out.');
 }
 
-function dataURLtoFile(dataurl: string, filename: string): File {
-  const arr = dataurl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while(n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, { type: mime });
+interface UploadCard {
+  id: string;
+  file: File;
+  preview: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'analyzing' | 'success' | 'error';
+  result?: ScanResult;
+  error?: string;
 }
 
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState(0);
+  const [uploads, setUploads] = useState<UploadCard[]>([]);
   const [cropType, setCropType] = useState('Rice');
-  const [region, setRegion] = useState('');
   
-  const { 
-    addScan, 
-    userRole, 
-    token, 
-    fetchHistory,
-    currentScan: result,
-    setCurrentScan: setResult,
-    uploadPreview: preview,
-    setUploadPreview: setPreview
-  } = useAppStore();
-  
-  const setScanning = useUIStore((state) => state.setScanning);
-  const { location: geoLocation, status: geoStatus, setRegionFallback } = useGeolocation();
+  const { userRole, currentScan, setCurrentScan, addScan } = useAppStore();
+  const { location: geoLocation } = useGeolocation();
 
+  const [viewingDashboard, setViewingDashboard] = useState(false);
+
+  // If user navigates here with an existing scan and NO uploads, show dashboard
   useEffect(() => {
-    if (token) fetchHistory();
-  }, [fetchHistory, token]);
-
-  // Sync region selection to geolocation fallback
-  useEffect(() => {
-    if (region && (geoStatus === 'denied' || geoStatus === 'manual' || !geoLocation)) {
-      setRegionFallback(region);
+    if (currentScan && uploads.length === 0) {
+      setViewingDashboard(true);
     }
-  }, [geoLocation, geoStatus, region, setRegionFallback]);
+  }, [currentScan, uploads.length]);
 
-  const isFarmer = userRole === 'farmer';
-  const processingSteps = isFarmer
-    ? ['Reading image...', 'Analyzing quality...', 'Detecting disease...', 'Generating intelligence...', 'Done!']
-    : ['Preprocessing image...', 'Running AI model...', 'Generating intelligence...', 'Building report...', 'Done!'];
-
-  const handleFile = useCallback((f: File) => {
-    if (!ACCEPTED_IMAGE_TYPES.includes(f.type)) {
-      toast({
-        title: 'Unsupported image',
-        description: 'Please upload a JPG or PNG image.',
-        variant: 'destructive',
+  const handleFiles = useCallback((files: FileList | File[]) => {
+    const newUploads: UploadCard[] = [];
+    
+    Array.from(files).forEach(f => {
+      if (!ACCEPTED_IMAGE_TYPES.includes(f.type)) return;
+      if (f.size > MAX_UPLOAD_SIZE_BYTES) return;
+      newUploads.push({
+        id: Math.random().toString(36).substring(7),
+        file: f,
+        preview: URL.createObjectURL(f),
+        progress: 0,
+        status: 'pending'
       });
-      return;
+    });
+
+    if (newUploads.length > 0) {
+      setUploads(prev => [...prev, ...newUploads]);
+      setViewingDashboard(false); // Force grid view when dragging new files
+      newUploads.forEach(u => processUpload(u.id, u.file));
     }
+  }, []);
 
-    if (f.size > MAX_UPLOAD_SIZE_BYTES) {
-      toast({
-        title: 'Image is too large',
-        description: 'Please upload an image under 10 MB.',
-        variant: 'destructive',
-      });
-      return;
+  const processUpload = async (id: string, file: File) => {
+    setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'uploading', progress: 10 } : u));
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('crop_type', cropType);
+      formData.append('language', 'English');
+      if (geoLocation) {
+        formData.append('lat', geoLocation.latitude.toString());
+        formData.append('lon', geoLocation.longitude.toString());
+      }
+
+      setUploads(prev => prev.map(u => u.id === id ? { ...u, progress: 40 } : u));
+      const response = await api.post<RawScanResult>('/detection/analyze', formData);
+      setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'analyzing', progress: 60 } : u));
+      
+      const completedRaw = await waitForCompletedDetection(response);
+      if (completedRaw.status === 'failed') throw new Error("AI pipeline failed.");
+      
+      const mappedResult = mapBackendToScanResult(completedRaw);
+      addScan(mappedResult);
+      
+      // DO NOT auto-set currentScan here, let them click View Report to avoid jarring navigation
+      setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'success', progress: 100, result: mappedResult } : u));
+    } catch (err: any) {
+      setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'error', progress: 0, error: err.message || "Upload failed." } : u));
     }
+  };
 
-    setResult(null);
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
-    reader.readAsDataURL(f);
-  }, [setPreview, setResult]);
+  const removeUpload = (id: string) => {
+    setUploads(prev => prev.filter(u => u.id !== id));
+  };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const retryUpload = (id: string) => {
+    const upload = uploads.find(u => u.id === id);
+    if (upload) processUpload(id, upload.file);
+  };
+
+  const handleViewReport = (result: ScanResult) => {
+    setCurrentScan(result);
+    setViewingDashboard(true);
+  };
+
+  const handleBackToGrid = () => {
+    setCurrentScan(null);
+    setViewingDashboard(false);
+  };
+
+  const handleNewScan = () => {
+    setCurrentScan(null);
+    setUploads([]);
+    setViewingDashboard(false);
+  };
+
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const onDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
+  const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
-  }, [handleFile]);
-
-  const handleAnalyze = async () => {
-    if (!preview) return;
-    setIsProcessing(true);
-    setProcessingStep(0);
-
-    const formData = new FormData();
-    const fileToUpload = dataURLtoFile(preview, 'upload.jpg');
-    formData.append('file', fileToUpload);
-
-    // Append geolocation data
-    if (geoLocation) {
-      formData.append('lat', String(geoLocation.latitude));
-      formData.append('lon', String(geoLocation.longitude));
-      if (geoLocation.locationName) {
-        formData.append('location_name', geoLocation.locationName);
-      }
-    }
-    formData.append('crop_type', cropType || 'Rice');
-
-    setScanning(true);
-    let stepTimer: ReturnType<typeof setInterval> | undefined;
-
-    try {
-      stepTimer = setInterval(() => {
-        setProcessingStep(prev => (prev < processingSteps.length - 2 ? prev + 1 : prev));
-      }, 1200);
-
-      const initialResponse = await api.post<RawScanResult>('/detection/analyze', formData);
-      const response = await waitForCompletedDetection(initialResponse);
-
-      if (response.status === 'failed') {
-        throw new Error(response.explanation || 'Image processing failed.');
-      }
-
-      setProcessingStep(processingSteps.length - 1);
-      await sleep(500);
-
-      const scan = mapBackendToScanResult(response, preview);
-
-      addScan(scan);
-      setResult(scan);
-      
-      toast({
-        title: 'Scan complete',
-        description: `${scan.diseaseName.replace(/_/g, ' ')} detected with ${scan.confidence.toFixed(1)}% confidence.`,
-      });
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      const message = error instanceof Error ? error.message : 'Please make sure the backend is running.';
-      toast({
-        title: 'Analysis failed',
-        description: message,
-        variant: 'destructive',
-      });
-    } finally {
-      if (stepTimer) clearInterval(stepTimer);
-      setIsProcessing(false);
-      setScanning(false);
-    }
+    if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
   };
 
-  const clearFile = () => {
-    setPreview(null);
-    setResult(null);
-  };
+  if (viewingDashboard && currentScan) {
+    return (
+      <div className="flex-1 p-4 md:p-8 bg-background relative overflow-y-auto overflow-x-hidden min-h-screen pt-12 md:pt-16">
+        <div className="max-w-6xl mx-auto space-y-6 w-full">
+          <div className="flex items-center justify-between mb-8 mt-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={handleBackToGrid} className="rounded-xl font-bold hover:bg-card">
+                <ChevronLeft className="w-4 h-4 mr-1" /> Back to Uploads
+              </Button>
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Intelligence Report</h1>
+            </div>
+            <Button variant="outline" onClick={handleNewScan} className="rounded-xl font-bold text-destructive border-destructive/20 hover:bg-destructive/10">
+              Clear All
+            </Button>
+          </div>
+          <ScanResultDashboard result={currentScan} isFarmer={userRole === 'farmer'} onNewScan={handleNewScan} />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            {isFarmer ? (
-              <>Crop <span className="gradient-text">Scanner</span></>
-            ) : (
-              <>AI <span className="gradient-text">Plant Scanner</span></>
-            )}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {isFarmer
-              ? 'Take or upload a photo of your crop leaf. We\'ll tell you what\'s wrong and how to fix it.'
-              : 'Upload a clear leaf image for instant AI-powered disease diagnosis and intelligence report.'}
+    <div className="flex-1 p-4 md:p-8 bg-background relative overflow-y-auto min-h-screen pt-8">
+       <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] mix-blend-screen opacity-40 animate-pulse" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]" />
+      </div>
+
+      <div className="max-w-5xl mx-auto space-y-8 relative z-10">
+        <div className="text-center space-y-3 pt-8">
+          <Badge variant="outline" className="bg-card/50 backdrop-blur font-bold uppercase tracking-widest text-[10px] text-primary border-primary/20">
+            <Sparkles className="w-3 h-3 inline mr-1" /> Multi-Image Analysis Engine
+          </Badge>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Advanced Crop Intelligence</h1>
+          <p className="text-muted-foreground text-sm max-w-xl mx-auto font-medium">
+            Upload multiple high-resolution images of affected leaves, stems, or soil. Our PyTorch pipeline will run parallel diagnostics.
           </p>
-        </motion.div>
+        </div>
 
-        <AnimatePresence mode="wait">
-          {!result ? (
-            <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              {!preview ? (
-                <div className="space-y-4">
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
-                    className={`glass rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all ${
-                      isDragging ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => document.getElementById('file-input')?.click()}
-                  >
-                    <input id="file-input" type="file" accept="image/jpeg,image/png" className="hidden" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-                    <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg">
-                      <Upload className="w-8 h-8 text-primary-foreground" />
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">{isFarmer ? 'Upload crop photo' : 'Drop your image here'}</h3>
-                    <p className="text-muted-foreground text-sm mb-4">or click to browse — PNG, JPG up to 10MB</p>
-                    <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-accent px-3 py-1.5 rounded-lg">
-                      <Sparkles className="w-3.5 h-3.5 text-primary" />
-                      {isFarmer ? 'Tip: Take a close-up photo of the affected leaf' : 'Tip: Use a clear, well-lit photo for best results'}
-                    </div>
-                  </div>
-
-                  {/* Crop/Region + Location */}
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-1.5 block">Crop Type</label>
-                      <select value={cropType} onChange={(e) => setCropType(e.target.value)} className="w-full px-4 py-2.5 rounded-xl glass text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/30">
-                        {CROP_TYPES.map(c => <option key={c} value={c} className="bg-background text-foreground">{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-1.5 block">Region</label>
-                      <select value={region} onChange={(e) => setRegion(e.target.value)} className="w-full px-4 py-2.5 rounded-xl glass text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/30">
-                        <option value="" className="bg-background text-foreground">Select region...</option>
-                        {REGIONS.map(r => <option key={r} value={r} className="bg-background text-foreground">{r}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Location status indicator */}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-                    {geoStatus === 'granted' && (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        📍 Location detected — weather intelligence enabled
-                      </>
-                    )}
-                    {geoStatus === 'requesting' && (
-                      <>
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Requesting location access...
-                      </>
-                    )}
-                    {geoStatus === 'denied' && region && (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
-                        📍 Using regional default — {region}
-                      </>
-                    )}
-                    {geoStatus === 'denied' && !region && (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-muted-foreground" />
-                        📍 Select a region for weather intelligence
-                      </>
-                    )}
-                  </div>
-
-                  {isFarmer && (
-                    <button className="glass rounded-xl px-5 py-3 flex items-center gap-3 text-sm font-medium hover:bg-accent/50 transition-colors w-full justify-center">
-                      <Mic className="w-5 h-5 text-primary" />
-                      Tap to describe your problem (Voice)
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="glass rounded-2xl p-6 space-y-6">
-                  <div className="relative">
-                    <img src={preview} alt="Preview" className="w-full max-h-80 object-contain rounded-xl bg-muted/50" />
-                    <button onClick={clearFile} className="absolute top-3 right-3 p-2 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-colors shadow-lg">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-sm">Uploaded Image</p>
-                        <p className="text-xs text-muted-foreground">{preview ? (preview.length * 0.75 / 1024 / 1024).toFixed(2) + ' MB' : ''}</p>
-                      </div>
-                    </div>
-                    <button onClick={handleAnalyze} disabled={isProcessing} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl gradient-primary text-primary-foreground font-semibold text-sm disabled:opacity-70 hover:opacity-95 transition-opacity shadow-lg">
-                      {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin" />Analyzing...</>) : (<><Sparkles className="w-4 h-4" />{isFarmer ? 'Check My Crop' : 'Analyze with AI'}</>)}
-                    </button>
-                  </div>
-                  {isProcessing && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2 pt-2 border-t border-border/50">
-                      {processingSteps.map((step, i) => (
-                        <div key={step} className={`flex items-center gap-3 text-sm py-1.5 transition-all ${i <= processingStep ? 'opacity-100' : 'opacity-30'}`}>
-                          {i < processingStep ? <CheckCircle2 className="w-4 h-4 text-success shrink-0" /> : i === processingStep ? <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" /> : <div className="w-4 h-4 rounded-full border-2 border-border shrink-0" />}
-                          <span className={i <= processingStep ? 'text-foreground' : 'text-muted-foreground'}>{step}</span>
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          ) : (
-            <ScanResultDashboard
-              result={result}
-              isFarmer={isFarmer}
-              onNewScan={clearFile}
-            />
+        {/* Dropzone */}
+        <div 
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          className={cn(
+            "relative w-full h-64 md:h-80 rounded-[2.5rem] border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center p-8 bg-card/40 backdrop-blur-3xl overflow-hidden group shadow-2xl",
+            isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-primary/20 hover:border-primary/50 hover:bg-card/60"
           )}
-        </AnimatePresence>
+        >
+          <input
+            type="file"
+            accept=".jpg,.jpeg,.png"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            multiple
+          />
+          <div className="flex flex-col items-center justify-center text-center space-y-4 relative z-0">
+             <div className="w-20 h-20 rounded-3xl bg-background border border-primary/20 shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 relative">
+               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+               <Upload className="w-8 h-8 text-primary relative z-10" />
+             </div>
+             <div>
+                <p className="text-lg font-bold text-foreground">Drag & drop research images</p>
+                <p className="text-xs text-muted-foreground mt-1 font-medium tracking-wide">Supports JPG, PNG up to 10MB each</p>
+             </div>
+          </div>
+        </div>
+
+
+        {/* Preview Cards Grid */}
+        {uploads.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-8">
+            <AnimatePresence>
+              {uploads.map(upload => (
+                <motion.div
+                  key={upload.id}
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-card border border-border/50 rounded-3xl overflow-hidden shadow-xl shadow-primary/5 flex flex-col relative group"
+                >
+                  {/* Image Preview Area */}
+                  <div className="relative h-48 w-full bg-black/50">
+                    <img src={upload.preview} alt="Upload preview" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+                    
+                    {/* Status Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                      {upload.status === 'uploading' && (
+                         <div className="flex items-center gap-2 text-white font-bold text-sm">
+                           <Loader2 className="w-4 h-4 animate-spin text-primary" /> Uploading to Secure Bucket...
+                         </div>
+                      )}
+                      {upload.status === 'analyzing' && (
+                         <div className="flex items-center gap-2 text-white font-bold text-sm">
+                           <Sparkles className="w-4 h-4 animate-pulse text-warning" /> Running PyTorch Inference...
+                         </div>
+                      )}
+                      {upload.status === 'error' && (
+                         <div className="flex flex-col gap-1.5">
+                           <div className="flex items-center gap-2 text-destructive font-bold text-sm shadow-black drop-shadow-md">
+                             <AlertCircle className="w-4 h-4" /> Inference Failed
+                           </div>
+                           {upload.error && (
+                             <span className="text-[10px] font-medium max-w-[180px] leading-tight text-white/90 bg-destructive/80 p-1.5 rounded-md backdrop-blur-sm">
+                               {upload.error}
+                             </span>
+                           )}
+                         </div>
+                      )}
+                      {upload.status === 'success' && upload.result && (
+                         <div className="flex flex-col gap-1">
+                           <span className={cn("text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded backdrop-blur w-fit border", 
+                              upload.result.confidence > 80 ? "bg-destructive/20 border-destructive/50 text-destructive-foreground" : "bg-primary/20 border-primary/50 text-primary-foreground")}>
+                             {upload.result.confidence > 80 ? 'Critical' : 'Detected'}
+                           </span>
+                           <span className="text-white font-bold truncate text-lg shadow-black drop-shadow-md">
+                             {upload.result.diseaseName.replace(/_/g, ' ')}
+                           </span>
+                         </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  {['uploading', 'analyzing'].includes(upload.status) && (
+                    <div className="w-full h-1 bg-secondary/50 relative overflow-hidden">
+                      <motion.div 
+                        className="absolute inset-y-0 left-0 bg-primary"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${upload.progress}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Action Bar */}
+                  <div className="p-3 bg-card flex justify-between items-center border-t border-border/30">
+                     <span className="text-xs text-muted-foreground font-semibold truncate max-w-[150px]">
+                       {upload.file.name}
+                     </span>
+                     
+                     <div className="flex gap-2">
+                       {upload.status === 'error' && (
+                         <Button size="icon" variant="ghost" className="h-8 w-8 text-warning" onClick={() => retryUpload(upload.id)}>
+                           <RefreshCw className="w-4 h-4" />
+                         </Button>
+                       )}
+                       {upload.status === 'success' && upload.result && (
+                         <Button size="sm" variant="ghost" className="h-8 font-bold text-primary gap-1" onClick={() => handleViewReport(upload.result!)}>
+                           View Report <ChevronRight className="w-4 h-4" />
+                         </Button>
+                       )}
+                       <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeUpload(upload.id)}>
+                         <X className="w-4 h-4" />
+                       </Button>
+                     </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+        
+        <div className="h-32" />
       </div>
     </div>
   );

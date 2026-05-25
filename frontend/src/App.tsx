@@ -27,6 +27,7 @@ const AdminAnalyticsPage = lazy(() => import("./pages/admin/AdminAnalyticsPage")
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 
+
 // The scene synchronizer connects React Router to the 3D Camera System
 const RouteSceneSync = () => {
   const location = useLocation();
@@ -58,12 +59,28 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const isDark = useAppStore((state) => state.isDark);
+  const syncOfflineQueue = useAppStore((state) => state.syncOfflineQueue);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
       document.documentElement.classList.toggle('dark', isDark);
     }
   }, [isDark]);
+
+  useEffect(() => {
+    if (navigator.onLine) {
+      syncOfflineQueue();
+    }
+
+    const handleOnline = () => {
+      syncOfflineQueue();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [syncOfflineQueue]);
 
   return (
   <QueryClientProvider client={queryClient}>
@@ -75,13 +92,20 @@ const App = () => {
       <MainCanvas />
 
       {/* 2D UI Overlay Grid */}
-      <div className="relative z-10 w-full h-full min-h-screen pointer-events-none">
+      <div className="relative z-10 w-full h-screen flex flex-col overflow-hidden pointer-events-none">
         <BrowserRouter>
           <RouteSceneSync />
           
-          <div className="pointer-events-auto">
+          {/* Fixed Navbar - always pinned at top */}
+          <div className="pointer-events-auto shrink-0">
             <Navbar />
-            <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+            {/* Spacer to offset content below the fixed navbar */}
+            <div className="h-16" />
+          </div>
+
+          {/* Scrollable Content Area - only this part scrolls/resizes */}
+          <div className="pointer-events-auto flex-1 overflow-y-auto overflow-x-hidden">
+            <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -94,6 +118,7 @@ const App = () => {
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+
                 
                 {/* Protected Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />

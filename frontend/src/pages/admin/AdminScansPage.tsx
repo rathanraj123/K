@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ScanLine, CheckCircle2, AlertTriangle, XCircle, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { safeDate } from '@/lib/utils';
 
 const severityBadge = (s?: string) => {
   const sev = (s || '').toLowerCase();
@@ -50,7 +51,7 @@ export default function AdminScansPage() {
       {/* Quick stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Scans Today', value: scans.filter(s => new Date(s.time).toDateString() === new Date().toDateString()).length.toString(), icon: ScanLine, color: 'text-primary bg-primary/10' },
+          { label: 'Scans Today', value: scans.filter(s => safeDate(s.time).toDateString() === safeDate().toDateString()).length.toString(), icon: ScanLine, color: 'text-primary bg-primary/10' },
           { label: 'Completed Scans', value: scans.filter(s => s.status === 'completed' || s.status === 'success').length.toString(), icon: CheckCircle2, color: 'text-emerald-400 bg-emerald-400/10' },
           { label: 'In Progress', value: scans.filter(s => s.status === 'processing').length.toString(), icon: ScanLine, color: 'text-blue-400 bg-blue-400/10 animate-pulse' },
           { label: 'Failed Scans', value: scans.filter(s => s.status === 'failed' || s.status === 'error').length.toString(), icon: AlertTriangle, color: 'text-red-400 bg-red-400/10' },
@@ -116,7 +117,7 @@ export default function AdminScansPage() {
                       )}
                     </td>
                     <td className="p-4 text-right text-xs text-muted-foreground">
-                      {new Date(s.time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {safeDate(s.time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
                   </tr>
                 ))

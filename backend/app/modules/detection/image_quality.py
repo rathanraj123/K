@@ -81,6 +81,11 @@ class ImageQualityAnalyzer:
 
             unified_score = sum(scores[k] * weights[k] for k in scores)
             unified_score = float(round(min(max(unified_score, 0), 100), 1))
+            
+            # Critical validation: If no plant/leaf is detected (e.g., uploading a cat, selfie, document),
+            # force the score below the passing threshold to trigger immediate rejection.
+            if has_low_coverage:
+                unified_score = min(unified_score, 30.0)
 
             # Generate retake suggestions
             suggestions = self._generate_suggestions(
@@ -134,14 +139,21 @@ class ImageQualityAnalyzer:
         return float(np.std(gray))
 
     def _analyze_leaf_coverage(self, hsv: np.ndarray) -> float:
-        """Estimate green leaf area using HSV color thresholding."""
+        """Estimate green/brown leaf area using HSV color thresholding."""
         # Green hue range for vegetation
         lower_green = np.array([25, 30, 30])
         upper_green = np.array([95, 255, 255])
-        mask = cv2.inRange(hsv, lower_green, upper_green)
-        green_pixels = np.count_nonzero(mask)
+        green_mask = cv2.inRange(hsv, lower_green, upper_green)
+        
+        # Brown/yellow range for diseased tissue
+        lower_brown = np.array([10, 40, 40])
+        upper_brown = np.array([30, 255, 200])
+        brown_mask = cv2.inRange(hsv, lower_brown, upper_brown)
+        
+        combined_mask = cv2.bitwise_or(green_mask, brown_mask)
+        leaf_pixels = np.count_nonzero(combined_mask)
         total_pixels = hsv.shape[0] * hsv.shape[1]
-        return green_pixels / total_pixels if total_pixels > 0 else 0.0
+        return leaf_pixels / total_pixels if total_pixels > 0 else 0.0
 
     def _analyze_shadows(self, gray: np.ndarray) -> float:
         """Ratio of very dark pixels (intensity < 30)."""

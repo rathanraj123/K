@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Users, Wheat, Microscope } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { safeDate } from '@/lib/utils';
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
@@ -130,7 +131,7 @@ export default function AdminUsersPage() {
                       {u.status?.toUpperCase()}
                     </span>
                   </td>
-                  <td className="p-4 text-xs text-muted-foreground">{new Date(u.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td className="p-4 text-xs text-muted-foreground">{safeDate(u.joined).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                   <td className="p-4 text-right">
                     <button 
                       onClick={() => toggleBlock(u.id)} 

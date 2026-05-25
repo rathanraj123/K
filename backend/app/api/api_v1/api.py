@@ -6,6 +6,7 @@ api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Enterprise Admin"])
 api_router.include_router(system_health.router, prefix="/system", tags=["System Health"])
+
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["AI Chatbot"])
 api_router.include_router(detection.router, prefix="/detection", tags=["Disease Detection"])
 api_router.include_router(agriculture.router, prefix="/agriculture", tags=["Agriculture Intelligence"])

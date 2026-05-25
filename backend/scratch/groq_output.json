@@ -1,0 +1,35 @@
+{
+  "farmer_report": {
+      "diagnosis": "రైస్ బ్లాస్ట్ వ్యాధి గుర్తించబడింది.",
+      "severity": "తక్కువ",
+      "crop_risk": "ప్రస్తుత శుష్క పరిస్థితులలో తక్కువ ప్రమాదం.",
+      "weather_impact": "శుష్క వాతావరణం ఫంగస్ ప్రసారాన్ని తగ్గిస్తుంది.",
+      "immediate_actions": [
+         "అధిక నైట్రోజన్ ఫర్టిలైజర్ అప్లికేషన్ నుండి విడిచిపెట్టండి.",
+         "స్వచ్ఛమైన నీటి నిర్వహణ చేయండి."
+      ],
+      "treatment_plan": {
+         "recommended_product": "Tricyclazole 75% WP",
+         "dosage": "0.6 g/L",
+         "application_method": "Foliar spray",
+         "estimated_cost_inr": "120-250 INR"
+      },
+      "prevention_tips": [
+         "బ్లాస్ట్ ప్రతిఘటన వారిటీలను ఉపయోగించండి.",
+         "కాలికలు పరిచయం చేయండి."
+      ],
+      "agronomist_summary": "రైస్ బ్లాస్ట్ ఒక గణనీయమైన ఫంగస్ వ్యాధి. త్వరిత నిరీక్షణ సిఫార్సు చేయబడింది."
+   },
+   "scientist_report": {
+      "primary_pathology": "Rice Blast disease caused by Magnaporthe oryzae.",
+      "confidence_interpretation": "High confidence in the diagnosis due to 87% ML prediction.",
+      "visual_feature_analysis": [
+         "Lesions on the leaves and stems.",
+         "Yellowing of leaves."
+      ],
+      "pathogen_profile": {
+         "scientific_name": "Magnaporthe oryzae",
+         "taxonomy": "Fungal kingdom, Ascomycota phylum, Magnaporthales order, Magnaporthaceae family.",
+         "infection_mechanism": "Infects through conidia and germinates on the host plant.",
+         "disease_cycle_stage": "Tillering to flowering stage."
+      }}}

@@ -4,6 +4,7 @@ import { TrendingUp, Target, Globe, Cpu } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { api } from '@/lib/api';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { safeDate } from '@/lib/utils';
 
 const PIE_COLORS = ['hsl(160, 84%, 39%)', 'hsl(243, 75%, 59%)', 'hsl(45, 93%, 47%)', 'hsl(0, 84%, 60%)', 'hsl(200, 70%, 50%)'];
 
@@ -37,7 +38,7 @@ export default function AdminAnalyticsPage() {
         // Process Growth Data (7-day trend)
         if (activityRes.data && Array.isArray(activityRes.data)) {
           const mappedGrowth = activityRes.data.map((d: any) => ({
-            day: new Date(d.date).toLocaleDateString(undefined, { weekday: 'short' }),
+            day: safeDate(d.date).toLocaleDateString(undefined, { weekday: 'short' }),
             scans: d.count
           }));
           setGrowthData(mappedGrowth);

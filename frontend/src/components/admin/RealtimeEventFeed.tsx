@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminStore } from '@/store/adminStore';
 import { Activity, AlertCircle, CheckCircle, Info, Zap, Wifi, WifiOff } from 'lucide-react';
+import { safeDate } from '@/lib/utils';
 
 const EVENT_ICONS: Record<string, React.ComponentType<any>> = {
   scan_upload:        Zap,
@@ -82,7 +83,7 @@ export function RealtimeEventFeed() {
                     )}
                   </div>
                   <span className="text-[10px] text-muted-foreground shrink-0 pt-0.5">
-                    {new Date(event.timestamp).toLocaleTimeString()}
+                    {safeDate(event.timestamp).toLocaleTimeString()}
                   </span>
                 </motion.div>
               );

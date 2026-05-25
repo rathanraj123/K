@@ -28,6 +28,7 @@ import { useAdminWebsocket } from '@/hooks/useAdminWebsocket';
 import { useAdminStore } from '@/store/adminStore';
 import { SystemHealthPanel } from '@/components/admin/SystemHealthPanel';
 import { RealtimeEventFeed } from '@/components/admin/RealtimeEventFeed';
+import { safeDate } from '@/lib/utils';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -466,7 +467,7 @@ export default function AdminDashboard() {
                   <span className="font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5">
                     {log.user_id ? `usr_${log.user_id.slice(0,6)}` : 'sys_kernel'}
                   </span>
-                  <span>{new Date(log.created_at).toLocaleTimeString()}</span>
+                  <span>{safeDate(log.created_at).toLocaleTimeString()}</span>
                 </div>
               </div>
             ))

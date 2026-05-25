@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, JSON, Integer
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -31,6 +31,7 @@ class DiseaseDetection(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     image_url = Column(String, nullable=True)
+    thumbnail_url = Column(String, nullable=True)
     detected_disease = Column(String, nullable=True)
     confidence = Column(Float, nullable=True)
     status = Column(String, default="completed") # processing, completed, failed
@@ -74,4 +75,14 @@ class DiseaseDetection(Base):
     scan_location_name = Column(String, nullable=True)
     crop_type = Column(String, nullable=True)
     
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class DetectionFeedback(Base):
+    __tablename__ = "detection_feedbacks"
+    
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    detection_id = Column(String(36), ForeignKey("disease_detections.id"), nullable=False)
+    corrected_disease = Column(String, nullable=True)
+    rating = Column(Integer, nullable=True)
+    comments = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

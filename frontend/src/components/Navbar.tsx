@@ -54,9 +54,9 @@ export default function Navbar() {
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border/50"
+      className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border/50 overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all hover:scale-105">
@@ -70,13 +70,12 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-0.5 min-w-0 overflow-hidden">
             {currentLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`relative px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 ${
                   location.pathname === link.to
                     ? 'text-primary'
                     : 'text-muted-foreground hover:text-foreground'

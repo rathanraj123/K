@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Activity, Server, Database, Zap, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
+import { safeDate } from '@/lib/utils';
 
 interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'no_workers' | string;
@@ -118,7 +119,7 @@ export function SystemHealthPanel() {
           </div>
 
           <p className="text-[10px] text-muted-foreground mt-3 text-right">
-            Last checked: {data?.timestamp ? new Date(data.timestamp * 1000).toLocaleTimeString() : '—'}
+            Last checked: {data?.timestamp ? safeDate(data.timestamp * 1000).toLocaleTimeString() : '—'}
           </p>
         </>
       )}

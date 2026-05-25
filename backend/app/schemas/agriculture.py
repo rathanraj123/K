@@ -281,3 +281,36 @@ class CropResponse(CropBase):
     id: str
     
     model_config = {"from_attributes": True}
+
+class DetectionFeedbackCreate(BaseModel):
+    corrected_disease: Optional[str] = None
+    rating: Optional[int] = None
+    comments: Optional[str] = None
+
+class DetectionFeedbackResponse(BaseModel):
+    id: str
+    detection_id: str
+    corrected_disease: Optional[str] = None
+    rating: Optional[int] = None
+    comments: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class TreatmentTrackCreate(BaseModel):
+    treatment_applied: str
+    recovery_progress: int
+    feedback_rating: Optional[int] = None
+    comments: Optional[str] = None
+
+class TreatmentTrackResponse(BaseModel):
+    id: str
+    detection_id: str
+    treatment_applied: str
+    recovery_progress: int
+    feedback_rating: Optional[int] = None
+    comments: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

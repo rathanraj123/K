@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Leaf, Grid3X3, List, AlertTriangle, CheckCircle2, Download, ArrowLeftRight } from 'lucide-react';
 import { useAppStore, ScanResult } from '@/store/useAppStore';
 import { Link } from 'react-router-dom';
+import { safeDate } from '@/lib/utils';
 
 const CROP_FILTERS = ['All', 'Rice', 'Wheat', 'Tomato', 'Potato', 'Cotton', 'Maize', 'Sugarcane'];
 
@@ -41,7 +42,7 @@ export default function HistoryPage() {
     'bg-destructive/10 text-destructive';
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
+    <div className="min-h-screen pt-8 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center justify-between">
@@ -140,7 +141,7 @@ export default function HistoryPage() {
                 <div className="p-4 space-y-3">
                   <div>
                     <h3 className="font-bold">{scan.diseaseName}</h3>
-                    <p className="text-xs text-muted-foreground">{new Date(scan.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                    <p className="text-xs text-muted-foreground">{safeDate(scan.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
                   </div>
                   {scan.cropType && <span className="text-xs px-2 py-0.5 rounded-md bg-accent text-accent-foreground font-medium">{scan.cropType}</span>}
                   <div className="flex justify-between text-sm">
@@ -174,7 +175,7 @@ export default function HistoryPage() {
                 <img src={scan.imageUrl} alt={scan.diseaseName} className="w-12 h-12 rounded-lg object-contain bg-muted/50 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{scan.diseaseName}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(scan.createdAt).toLocaleDateString()}{scan.cropType ? ` · ${scan.cropType}` : ''}</p>
+                  <p className="text-xs text-muted-foreground">{safeDate(scan.createdAt).toLocaleDateString()}{scan.cropType ? ` · ${scan.cropType}` : ''}</p>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${severityBadge(scan.severity)} hidden sm:inline`}>{scan.severity}</span>
                 <span className="text-sm font-semibold text-primary">{isFarmer ? (scan.confidence >= 90 ? 'High' : scan.confidence >= 70 ? 'Medium' : 'Low') : `${Number(scan.confidence).toFixed(2)}%`}</span>

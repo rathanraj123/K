@@ -32,11 +32,13 @@ export default function AuthPage() {
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [dbError, setDbError] = useState('');
 
-  const { setToken, setUserName, setUserRole } = useAppStore();
+  const { setToken, setUserName, setUserRole, logout } = useAppStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    // Reset session state when hitting login/auth page to prevent cross-account leak
+    logout();
     checkConnection();
   }, []);
 
@@ -75,6 +77,7 @@ export default function AuthPage() {
         formData.append('password', password);
 
         const data = await api.post<LoginResponse>('/auth/login/access-token', formData);
+        logout();
         setToken(data.access_token);
 
         try {
@@ -117,7 +120,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 flex items-center justify-center p-4">
+    <div className="min-h-screen pt-8 pb-12 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">

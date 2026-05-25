@@ -5,6 +5,7 @@ import { Upload, History, ScanLine, Clock, ArrowRight, Leaf, BarChart3, Target, 
 import { useAppStore } from '@/store/useAppStore';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { api } from '@/lib/api';
+import { safeDate } from '@/lib/utils';
 
 const PIE_COLORS = ['hsl(142, 76%, 36%)', 'hsl(45, 93%, 47%)', 'hsl(243, 75%, 59%)', 'hsl(0, 84%, 60%)'];
 
@@ -51,7 +52,7 @@ export default function DashboardPage() {
   const [weatherAlerts, setWeatherAlerts] = useState<string[]>([]);
   const [temp, setTemp] = useState('—');
   const totalScans = scanHistory.length;
-  const hour = new Date().getHours();
+  const hour = safeDate().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const isFarmer = String(userRole).toLowerCase() === 'farmer';
 
@@ -111,12 +112,12 @@ export default function DashboardPage() {
     // Scan Trends Area Chart (Last 7 Days)
     const trendsMap = new Map<string, number>();
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
+      const d = safeDate();
       d.setDate(d.getDate() - i);
       trendsMap.set(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 0);
     }
     scanHistory.forEach(s => {
-      const d = new Date(s.createdAt);
+      const d = safeDate(s.createdAt);
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (trendsMap.has(dateStr)) {
         trendsMap.set(dateStr, trendsMap.get(dateStr)! + 1);
@@ -143,7 +144,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
+    <div className="min-h-screen pt-8 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div initial="hidden" animate="visible" className="mb-10">
@@ -368,7 +369,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{scan.diseaseName}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(scan.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground">{safeDate(scan.createdAt).toLocaleDateString()}</p>
                   </div>
                   {isFarmer ? (
                     <span className={`text-xs font-semibold px-2 py-1 rounded-md ${
