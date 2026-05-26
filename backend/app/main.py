@@ -35,6 +35,16 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created / verified.")
 
+    # Validate Supabase connection configuration
+    try:
+        from app.services.storage import storage_service
+        if storage_service.supabase:
+            logger.info("Supabase storage connectivity verified.")
+        else:
+            logger.warning("Supabase storage is unconfigured. Defaulting to Base64 fallback storage.")
+    except Exception as es_err:
+        logger.error(f"Error checking Supabase client startup status: {es_err}")
+
     # Seed a demo user if one doesn't exist
     async with AsyncSessionLocal() as session:
         from app.models.user import User

@@ -1,7 +1,4 @@
-const DATAGOV_API_KEY = '579b464db66ec23bdd00000102b36f18cefb44a44aae8335aad3af27';
-// This is a generic resource ID for Mandi Prices. It might need updating if data.gov.in rotates it.
-const DATAGOV_MANDI_RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';
-const DATAGOV_BASE_URL = 'https://api.data.gov.in/resource';
+import { api } from '@/lib/api';
 
 export interface MarketPrice {
   commodity: string;
@@ -69,34 +66,13 @@ const MOCK_PRICES: MarketPrice[] = [
 
 export const fetchMarketPrices = async (): Promise<MarketPrice[]> => {
   try {
-    const url = `${DATAGOV_BASE_URL}/${DATAGOV_MANDI_RESOURCE_ID}?api-key=${DATAGOV_API_KEY}&format=json&limit=50`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.warn("Data.gov.in API failed, using mock market prices.");
-      return MOCK_PRICES;
+    const data = await api.get<MarketPrice[]>('/agriculture/market-prices');
+    if (data && data.length > 0) {
+      return data;
     }
-
-    const data = await response.json();
-    if (data.records && data.records.length > 0) {
-      // Process and group the records to look nice
-      return data.records.slice(0, 10).map((r: any) => ({
-        commodity: r.commodity,
-        state: r.state,
-        district: r.district,
-        market: r.market,
-        min_price: parseFloat(r.min_price),
-        max_price: parseFloat(r.max_price),
-        modal_price: parseFloat(r.modal_price),
-        arrival_date: r.arrival_date,
-        trend: Math.random() > 0.5 ? 'up' : Math.random() > 0.5 ? 'down' : 'stable', // Simulated trend as data.gov doesn't provide historical delta directly here
-        trend_percentage: parseFloat((Math.random() * 5).toFixed(1)) * (Math.random() > 0.5 ? 1 : -1)
-      }));
-    }
-    
     return MOCK_PRICES;
   } catch (error) {
-    console.error('Error fetching market prices:', error);
+    console.error('Error fetching market prices from proxy:', error);
     return MOCK_PRICES;
   }
 };

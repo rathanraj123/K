@@ -1,9 +1,8 @@
 import httpx
 import logging
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-DATA_GOV_KEY = "579b464db66ec23bdd00000102b36f18cefb44a44aae8335aad3af27"
 
 async def fetch_regional_crop_stats():
     """

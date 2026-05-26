@@ -1,16 +1,15 @@
 import httpx
 import logging
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-NEWS_API_KEY = "3adf64d4b590437390c62a98cb682d49"
 
 async def fetch_scientific_news():
     """
     Fetches agriculture, climate, and disease outbreak news from NewsAPI.
     """
     try:
-        url = f"https://newsapi.org/v2/everything?q=agriculture OR crop disease OR climate change&language=en&sortBy=publishedAt&apiKey={NEWS_API_KEY}"
+        url = f"https://newsapi.org/v2/everything?q=agriculture OR crop disease OR climate change&language=en&sortBy=publishedAt&apiKey={settings.NEWS_API_KEY}"
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=10.0)
             response.raise_for_status()
