@@ -73,6 +73,24 @@ async def lifespan(app: FastAPI):
     import asyncio
     asyncio.create_task(bg_es_setup())
 
+    # 2. Preload ML Models to prevent cold-starts
+    async def preload_ml_models():
+        try:
+            logger.info("Preloading ML Models (YOLO-World & TFLite)...")
+            from app.modules.detection.yolo_validator import yolo_validator
+            from app.modules.detection.service import detection_service
+            
+            # YOLO is CPU-bound and synchronous, run in thread to avoid blocking loop
+            await asyncio.to_thread(yolo_validator.preload_model)
+            
+            # TFLite is already async
+            await detection_service.preload_model()
+            logger.info("ML Models preloaded successfully.")
+        except Exception as e:
+            logger.error(f"Failed to preload ML models: {e}")
+            
+    asyncio.create_task(preload_ml_models())
+
 
 
     # 3. Initialize Redis L1 cache connection and start WebSocket Redis listener
@@ -99,8 +117,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from fastapi.middleware.gzip import GZipMiddleware
+
 # 1. Observability Middleware
 app.add_middleware(ObservabilityMiddleware)
+
+# 1.5 GZip Compression
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # 2. Configurable CORS
 app.add_middleware(

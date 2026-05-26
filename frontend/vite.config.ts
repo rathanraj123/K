@@ -21,13 +21,34 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.info', 'console.debug', 'console.log'],
+      },
+      format: {
+        comments: false,
+      },
+    },
     cssCodeSplit: true,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom', 'zustand', '@tanstack/react-query'],
+          react: ['react', 'react-dom', 'react-router-dom'],
+          state: ['zustand', '@tanstack/react-query'],
           three: ['three', '@react-three/fiber', '@react-three/drei'],
-          ui: ['framer-motion', 'lucide-react', 'recharts'],
+          ui: ['framer-motion', 'lucide-react'],
+          charts: ['recharts'],
+          radix: [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-tooltip'
+          ],
         },
       },
     },

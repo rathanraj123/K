@@ -38,6 +38,10 @@ class YoloValidator:
             self.model.set_classes(self.classes)
             logger.info("YOLO-World model loaded with custom classes.")
 
+    def preload_model(self):
+        """Preloads the model into memory. Designed to be called at application startup."""
+        self._load_model()
+
     def analyze_and_crop(self, image_bytes: bytes) -> Tuple[Dict[str, Any], Optional[bytes]]:
         """
         Analyzes the scene using YOLO-World.

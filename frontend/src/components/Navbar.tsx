@@ -22,7 +22,9 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = userRole === 'admin';
+  const isScientist = userRole === 'scientist' || userRole === 'admin';
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isScientistRoute = location.pathname.startsWith('/scientist');
   const isAuthenticated = !!token;
 
   const navLinks = isAuthenticated ? [
@@ -35,6 +37,13 @@ export default function Navbar() {
     { to: '/', label: 'Home' },
   ];
 
+  const scientistLinks = [
+    { to: '/', label: 'Home' },
+    { to: '/scientist', label: 'Intelligence' },
+    { to: '/history', label: 'Database' },
+    { to: '/chat', label: 'AI Assistant' },
+  ];
+
   const adminLinks = [
     { to: '/', label: 'Home' },
     { to: '/admin', label: 'Dashboard' },
@@ -43,12 +52,16 @@ export default function Navbar() {
     { to: '/admin/analytics', label: 'Analytics' },
   ];
 
-  const currentLinks = isAdminRoute ? adminLinks : navLinks;
+  const currentLinks = isAdminRoute ? adminLinks : (isScientistRoute ? scientistLinks : navLinks);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  if (isScientistRoute) {
+    return null; // The scientist dashboard has its own dedicated header (IntelligenceHeader)
+  }
 
   return (
     <motion.nav
@@ -58,15 +71,18 @@ export default function Navbar() {
     >
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-2 group">
+          <Link to={isAdminRoute ? '/admin' : (isScientistRoute ? '/scientist' : '/')} className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all hover:scale-105">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-bold tracking-tight">
               Agri<span className="gradient-text">Cosmo</span>
             </span>
-            {isAdmin && (
+            {isAdminRoute && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold border border-destructive/20 animate-pulse">Admin</span>
+            )}
+            {isScientistRoute && !isAdminRoute && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold border border-blue-500/20">Scientist</span>
             )}
           </Link>
 
@@ -102,15 +118,18 @@ export default function Navbar() {
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <Link
-              to="/admin"
-              className="hidden md:inline-flex p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              title="Admin Panel"
-            >
-              <Shield className="w-5 h-5" />
-            </Link>
+            {isAdmin && !isAdminRoute && (
+              <Link
+                to="/admin"
+                className="hidden md:inline-flex p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title="Admin Panel"
+              >
+                <Shield className="w-5 h-5" />
+              </Link>
+            )}
 
-            {!isAdminRoute && (
+
+            {(!isAdminRoute && !isScientistRoute) && (
               <div className="flex items-center gap-3 ml-2 border-l border-border/50 pl-4">
                 {isAuthenticated ? (
                   <DropdownMenu>

@@ -38,6 +38,16 @@ export interface ImmediateAction {
   precaution: string;
 }
 
+export interface UploadCard {
+  id: string;
+  file?: File;
+  preview: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'analyzing' | 'success' | 'error';
+  result?: ScanResult;
+  error?: string;
+}
+
 export interface OrganicTreatment {
   name: string;
   method: string;
@@ -452,6 +462,12 @@ interface AppState {
   uploadPreview: string | null;
   setUploadPreview: (preview: string | null) => void;
 
+  // Scan-to-Chat Context State
+  pendingChatContext: ScanResult | null;
+  setPendingChatContext: (scan: ScanResult | null) => void;
+  activeScanContext: ScanResult | null;
+  setActiveScanContext: (scan: ScanResult | null) => void;
+
   // Chat History State
   chatThreads: ChatThread[];
   currentChatThreadId: string | null;
@@ -467,6 +483,10 @@ interface AppState {
   addToOfflineQueue: (scan: Omit<QueuedScan, 'id' | 'timestamp'>) => void;
   removeFromOfflineQueue: (id: string) => void;
   syncOfflineQueue: () => Promise<void>;
+
+  // Upload/Scan Progress State (in-memory only, not persisted)
+  activeUploads: UploadCard[];
+  setActiveUploads: (updater: UploadCard[] | ((prev: UploadCard[]) => UploadCard[])) => void;
 }
 
 export interface QueuedScan {
@@ -510,6 +530,10 @@ export const useAppStore = create<AppState>()(
       },
       currentScan: null,
       setCurrentScan: (scan) => set({ currentScan: scan }),
+      pendingChatContext: null,
+      setPendingChatContext: (scan) => set({ pendingChatContext: scan }),
+      activeScanContext: null,
+      setActiveScanContext: (scan) => set({ activeScanContext: scan }),
       uploadPreview: null,
       setUploadPreview: (preview) => set({ uploadPreview: preview }),
       userName: 'Researcher',
@@ -625,7 +649,12 @@ export const useAppStore = create<AppState>()(
             console.error(`Failed to sync offline scan ${item.id}:`, error);
           }
         }
-      }
+      },
+      
+      activeUploads: [],
+      setActiveUploads: (updater) => set((s) => ({
+        activeUploads: typeof updater === 'function' ? updater(s.activeUploads) : updater
+      })),
     }),
     {
       name: 'agricosmo-store',

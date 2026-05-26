@@ -89,3 +89,8 @@ temp_error.txt
 *.tflite
 # Cleanup Backup
 _cleanup_backup_phase2/
+
+# ML Model Cache (large embedding files)
+backend/app/model_cache/
+backend/scratch/
+backend/static/uploads/

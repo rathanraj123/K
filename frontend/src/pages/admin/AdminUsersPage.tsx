@@ -37,7 +37,14 @@ export default function AdminUsersPage() {
   const toggleBlock = async (id: string) => {
     // Optimistic update
     setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u));
-    // In a real app, I'd call api.post(`/users/${id}/toggle-status`)
+    
+    try {
+      await api.post(`/admin/users/${id}/toggle-status`);
+    } catch (error) {
+      console.error('Failed to toggle status:', error);
+      // Revert optimistic update
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'blocked' : 'active' } : u));
+    }
   };
 
   return (

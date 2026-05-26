@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle, TrendingUp, Activity, Target, Brain, Beaker, MapPin, Sparkles, Star, Send, Check, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import type { ScanResult } from '@/store/useAppStore';
+import { CheckCircle2, AlertCircle, TrendingUp, Activity, Target, Brain, Beaker, MapPin, Sparkles, Star, Send, Check, Loader2, MessageSquareText } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAppStore, type ScanResult } from '@/store/useAppStore';
 import { api, apiAssetUrl } from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
 
@@ -19,7 +19,11 @@ interface Props {
   onNewScan: () => void;
 }
 
-export default function ScanResultDashboard({ result, isFarmer, onNewScan }: Props) {
+const ScanResultDashboard = React.memo(function ScanResultDashboard({ result, isFarmer, onNewScan }: Props) {
+  const navigate = useNavigate();
+  const setPendingChatContext = useAppStore(s => s.setPendingChatContext);
+  const setActiveScanContext = useAppStore(s => s.setActiveScanContext);
+
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [rating, setRating] = useState<number>(0);
   const [correctedDisease, setCorrectedDisease] = useState<string>('');
@@ -27,7 +31,7 @@ export default function ScanResultDashboard({ result, isFarmer, onNewScan }: Pro
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
   const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
 
-  const handleSubmitFeedback = async () => {
+  const handleSubmitFeedback = useCallback(async () => {
     if (rating === 0) {
       toast({
         title: 'Rating Required',
@@ -58,7 +62,13 @@ export default function ScanResultDashboard({ result, isFarmer, onNewScan }: Pro
     } finally {
       setSubmittingFeedback(false);
     }
-  };
+  }, [rating, correctedDisease, comments, result.id]);
+
+  const handleDiscussWithAI = useCallback(() => {
+    setPendingChatContext(result);
+    setActiveScanContext(result);
+    navigate('/chat');
+  }, [result, navigate, setPendingChatContext, setActiveScanContext]);
 
   return (
     <motion.div
@@ -340,6 +350,20 @@ export default function ScanResultDashboard({ result, isFarmer, onNewScan }: Pro
                 <p className="text-xl font-black text-foreground">{result.farmerReport.treatment_plan?.estimated_cost_inr ?? '₹0'}</p>
               </div>
             </div>
+            
+            {/* Discuss with AI CTA */}
+            <div className="mt-6 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 rounded-xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <MessageSquareText className="w-10 h-10 text-primary mb-3" />
+              <h4 className="font-bold text-lg mb-1">Need more clarification?</h4>
+              <p className="text-sm text-muted-foreground mb-4 text-center">Ask our Expert AI about this specific report, get detailed treatment steps, or explore alternative organic solutions.</p>
+              <button 
+                onClick={handleDiscussWithAI}
+                className="relative z-10 flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 transition-all"
+              >
+                <Brain className="w-5 h-5" /> Discuss with AI
+              </button>
+            </div>
           </div>
           
           {/* Treatment Tracker Form */}
@@ -594,4 +618,6 @@ export default function ScanResultDashboard({ result, isFarmer, onNewScan }: Pro
       )}
     </motion.div>
   );
-}
+});
+
+export default ScanResultDashboard;

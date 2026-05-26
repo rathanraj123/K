@@ -118,26 +118,34 @@ async def get_analytics_charts(
         if cached:
             return json.loads(cached)
 
-    # Build weekly scans from DailyScanStat table
-    from app.models.enterprise import DailyScanStat
+    # Build weekly scans from DiseaseDetection table directly
+    from app.models.agriculture import DiseaseDetection
+    from sqlalchemy import cast, Date
     import datetime
-    week_ago = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)).replace(tzinfo=None)
-    result = await db.execute(
-        select(DailyScanStat)
-        .where(DailyScanStat.date >= week_ago)
-        .order_by(DailyScanStat.date)
+    
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    week_ago_date = today - datetime.timedelta(days=6) # 7 days inclusive of today
+    
+    stmt = (
+        select(
+            cast(DiseaseDetection.created_at, Date).label("date"),
+            func.count(DiseaseDetection.id).label("total")
+        )
+        .where(cast(DiseaseDetection.created_at, Date) >= week_ago_date)
+        .group_by(cast(DiseaseDetection.created_at, Date))
     )
-    rows = result.scalars().all()
-
-    weekly_scans = [
-        {
-            "name": row.date.strftime("%a"),
-            "scans": row.total_scans,
-            "failed": row.failed_scans,
-            "avg_confidence": round(row.avg_confidence, 2)
-        }
-        for row in rows
-    ]
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    counts_by_date = {row.date: row.total for row in rows}
+    
+    weekly_scans = []
+    for i in range(7):
+        current_date = week_ago_date + datetime.timedelta(days=i)
+        weekly_scans.append({
+            "name": current_date.strftime("%a"),
+            "scans": counts_by_date.get(current_date, 0),
+        })
 
     # Disease frequency from DiseaseStatistic table
     from app.models.enterprise import DiseaseStatistic
@@ -150,8 +158,41 @@ async def get_analytics_charts(
         for row in disease_rows
     ]
 
-    payload = {"weekly_scans": weekly_scans, "disease_trends": disease_trends}
+    # Regional Distribution from User table
+    region_result = await db.execute(
+        select(User.region, func.count(User.id)).group_by(User.region)
+    )
+    region_rows = region_result.all()
+    regional_distribution = []
+    for region, count in region_rows:
+        reg_name = region if region else "Unknown"
+        regional_distribution.append({"region": reg_name, "value": count})
+
+    payload = {
+        "weekly_scans": weekly_scans, 
+        "disease_trends": disease_trends,
+        "regional_distribution": regional_distribution
+    }
     if redis_client:
         await redis_client.setex(cache_key, 30, json.dumps(payload))
 
     return payload
+
+@router.post("/users/{user_id}/toggle-status")
+async def toggle_user_status(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin)
+) -> Any:
+    from fastapi import HTTPException
+    
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.is_active = not user.is_active
+    await db.commit()
+    
+    return {"id": user.id, "status": "active" if user.is_active else "blocked"}

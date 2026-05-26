@@ -24,6 +24,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminScansPage = lazy(() => import("./pages/admin/AdminScansPage"));
 const AdminAnalyticsPage = lazy(() => import("./pages/admin/AdminAnalyticsPage"));
+const ScientistDashboard = lazy(() => import("./pages/scientist/ScientistDashboard"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 
@@ -125,6 +126,9 @@ const App = () => {
                 <Route path="/admin/users" element={<ProtectedRoute requireAdmin><AdminUsersPage /></ProtectedRoute>} />
                 <Route path="/admin/scans" element={<ProtectedRoute requireAdmin><AdminScansPage /></ProtectedRoute>} />
                 <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><AdminAnalyticsPage /></ProtectedRoute>} />
+
+                {/* Protected Scientist Routes */}
+                <Route path="/scientist" element={<ProtectedRoute requireRole={['scientist', 'admin']}><ScientistDashboard /></ProtectedRoute>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

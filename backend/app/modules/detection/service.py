@@ -83,6 +83,10 @@ class DetectionService:
             logger.error(f"⚠️ Model file not found at {self.model_path} or invalid length.")
             return None, None, None
 
+    async def preload_model(self):
+        """Preloads the model into memory. Designed to be called at application startup."""
+        await self._get_interpreter()
+
     # ─── Main Detection Pipeline ─────────────────────────────────
 
     async def predict_disease(

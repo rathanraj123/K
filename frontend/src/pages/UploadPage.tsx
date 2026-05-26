@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Loader2, Sparkles, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, ChevronLeft, Beaker, Leaf, FlaskConical, Plus } from 'lucide-react';
-import { useAppStore, ScanResult, RawScanResult, mapBackendToScanResult } from '@/store/useAppStore';
+import { useAppStore, ScanResult, RawScanResult, mapBackendToScanResult, UploadCard } from '@/store/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -33,22 +33,19 @@ async function waitForCompletedDetection(initial: RawScanResult): Promise<RawSca
   throw new Error('Analysis timed out.');
 }
 
-interface UploadCard {
-  id: string;
-  file: File;
-  preview: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'analyzing' | 'success' | 'error';
-  result?: ScanResult;
-  error?: string;
-}
+
 
 export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
-  const [uploads, setUploads] = useState<UploadCard[]>([]);
   const [cropType, setCropType] = useState('Rice');
   
-  const { userRole, currentScan, setCurrentScan, addScan } = useAppStore();
+  const uploads = useAppStore(s => s.activeUploads);
+  const setUploads = useAppStore(s => s.setActiveUploads);
+  
+  const userRole = useAppStore(s => s.userRole);
+  const currentScan = useAppStore(s => s.currentScan);
+  const setCurrentScan = useAppStore(s => s.setCurrentScan);
+  const addScan = useAppStore(s => s.addScan);
   const { location: geoLocation } = useGeolocation();
 
   const [viewingDashboard, setViewingDashboard] = useState(false);
@@ -118,7 +115,7 @@ export default function UploadPage() {
 
   const retryUpload = (id: string) => {
     const upload = uploads.find(u => u.id === id);
-    if (upload) processUpload(id, upload.file);
+    if (upload && upload.file) processUpload(id, upload.file);
   };
 
   const handleViewReport = (result: ScanResult) => {
@@ -282,7 +279,7 @@ export default function UploadPage() {
                   {/* Action Bar */}
                   <div className="p-3 bg-card flex justify-between items-center border-t border-border/30">
                      <span className="text-xs text-muted-foreground font-semibold truncate max-w-[150px]">
-                       {upload.file.name}
+                       {upload.file?.name || 'Uploaded File'}
                      </span>
                      
                      <div className="flex gap-2">

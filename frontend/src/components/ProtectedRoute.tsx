@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, UserRole } from '@/store/useAppStore';
 
-export default function ProtectedRoute({ children, requireAdmin }: { children: React.ReactNode, requireAdmin?: boolean }) {
+export default function ProtectedRoute({ children, requireAdmin, requireRole }: { children: React.ReactNode, requireAdmin?: boolean, requireRole?: UserRole[] }) {
   const { token, userRole } = useAppStore();
   const location = useLocation();
 
@@ -13,6 +13,12 @@ export default function ProtectedRoute({ children, requireAdmin }: { children: R
   // If trying to access admin route without being an admin
   if (requireAdmin && userRole !== 'admin') {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  }
+
+  // Check specific roles if provided
+  if (requireRole && !requireRole.includes(userRole as UserRole)) {
+    // If not allowed, send back to home
+    return <Navigate to="/" replace />;
   }
 
   // If trying to access user route with token but no specific userRole (though app defaults to farmer)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ScanLine, CheckCircle2, AlertTriangle, XCircle, Upload } from 'lucide-react';
+import { ScanLine, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { safeDate } from '@/lib/utils';
@@ -66,20 +66,6 @@ export default function AdminScansPage() {
         ))}
       </div>
 
-      {/* Dataset Upload */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        transition={{ delay: 0.1 }} 
-        className="glass rounded-2xl p-6 mb-8 border border-border/35 hover:border-primary/25 transition-all duration-300"
-      >
-        <div className="flex items-center gap-3 mb-2.5">
-          <Upload className="w-5 h-5 text-primary" />
-          <h3 className="font-bold">Upload Training Dataset</h3>
-          <span className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold border border-primary/20 tracking-wider uppercase">Coming Soon</span>
-        </div>
-        <p className="text-sm text-muted-foreground">Upload new labeled datasets to retrain and improve crop disease classification accuracy.</p>
-      </motion.div>
 
       {/* Table */}
       <div className="glass rounded-2xl overflow-hidden border border-border/30">
