@@ -52,6 +52,9 @@ async def lifespan(app: FastAPI):
             ]
             for col_name, col_type in columns_to_verify:
                 await conn.execute(text(f"ALTER TABLE disease_detections ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+            
+            # Heal chat_threads table columns
+            await conn.execute(text("ALTER TABLE chat_threads ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;"))
             logger.info("Database schema migration verification completed successfully.")
         except Exception as mig_err:
             logger.warning(f"Resilient migration check skipped: {mig_err}")

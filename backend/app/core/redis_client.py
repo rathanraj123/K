@@ -15,12 +15,19 @@ async def init_redis():
     """Initialize Redis connection pool."""
     global redis_client
     try:
+        kwargs = {
+            "encoding": "utf-8",
+            "decode_responses": True,
+            "socket_timeout": 5.0,
+            "socket_connect_timeout": 5.0
+        }
+        if REDIS_URL.startswith("rediss://"):
+            import ssl
+            kwargs["ssl_cert_reqs"] = ssl.CERT_NONE
+            
         redis_client = redis.from_url(
             REDIS_URL,
-            encoding="utf-8",
-            decode_responses=True,
-            socket_timeout=5.0,
-            socket_connect_timeout=5.0
+            **kwargs
         )
         # Ping to check connection
         await redis_client.ping()
