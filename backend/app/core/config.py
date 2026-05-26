@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
@@ -50,14 +50,14 @@ class BaseConfig(BaseSettings):
     ELASTICSEARCH_ENABLED: bool = True
     
     # CORS & URLs
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:5173",
         "*"
     ]
-    BACKEND_CORS_ORIGINS: Optional[List[str]] = None
+    BACKEND_CORS_ORIGINS: Optional[Union[List[str], str]] = None
     FRONTEND_URL: str = "http://localhost:5173"
     API_BASE_URL: str = "http://localhost:8000/api/v1"
     RENDER_EXTERNAL_URL: Optional[str] = None
@@ -95,8 +95,20 @@ class BaseConfig(BaseSettings):
             self.SUPABASE_KEY = self.SUPABASE_SERVICE_ROLE_KEY or self.SUPABASE_ANON_KEY
             
         # Handle parsed backend cors origins
-        if self.BACKEND_CORS_ORIGINS:
-            self.CORS_ORIGINS = self.BACKEND_CORS_ORIGINS
+        # Handle parsed backend cors origins / string representation
+        raw_origins = self.BACKEND_CORS_ORIGINS if self.BACKEND_CORS_ORIGINS is not None else self.CORS_ORIGINS
+        if isinstance(raw_origins, str):
+            raw_origins = raw_origins.strip()
+            if raw_origins.startswith("[") and raw_origins.endswith("]"):
+                try:
+                    import json
+                    self.CORS_ORIGINS = json.loads(raw_origins)
+                except Exception:
+                    self.CORS_ORIGINS = [x.strip() for x in raw_origins[1:-1].split(",") if x.strip()]
+            else:
+                self.CORS_ORIGINS = [x.strip() for x in raw_origins.split(",") if x.strip()]
+        else:
+            self.CORS_ORIGINS = raw_origins
             
         # Set short alias env string based on environment setting
         if self.ENVIRONMENT == "production":
