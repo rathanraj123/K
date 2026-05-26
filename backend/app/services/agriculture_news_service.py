@@ -60,8 +60,10 @@ async def fetch_agriculture_news() -> list:
         return MOCK_NEWS
 
     try:
+        import urllib.parse
         query = "agriculture OR farming OR \"crop disease\" OR fertilizer OR irrigation"
-        url = f"https://newsapi.org/v2/everything?q={httpx.URLEscape(query)}&language=en&sortBy=publishedAt&pageSize=10&apiKey={settings.NEWS_API_KEY}"
+        encoded_query = urllib.parse.quote(query)
+        url = f"https://newsapi.org/v2/everything?q={encoded_query}&language=en&sortBy=publishedAt&pageSize=10&apiKey={settings.NEWS_API_KEY}"
         
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=10.0)
