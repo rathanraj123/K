@@ -187,9 +187,6 @@ async def run_detection_async(
         async with AsyncSessionLocal() as db:
             detection = await db.get(DiseaseDetection, detection_id)
             if detection:
-                detection.status = "failed"
-                detection.explanation = f"Error processing image: {e}"
-                
                 # Update DailyScanStat for failed scan
                 try:
                     import datetime
@@ -208,7 +205,9 @@ async def run_detection_async(
                 except Exception:
                     pass
                 
+                await db.delete(detection)
                 await db.commit()
+                logger.info(f"Deleted failed detection record {detection_id} from database.")
 
 
 @celery_app.task(bind=True, max_retries=3)

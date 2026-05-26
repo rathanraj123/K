@@ -145,7 +145,7 @@ async def get_history(
     """
     result = await db.execute(
         select(DiseaseDetection)
-        .where(DiseaseDetection.user_id == current_user.id)
+        .where(DiseaseDetection.user_id == current_user.id, DiseaseDetection.status == "completed")
         .order_by(DiseaseDetection.created_at.desc())
     )
     return result.scalars().all()
