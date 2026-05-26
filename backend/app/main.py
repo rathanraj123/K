@@ -28,11 +28,33 @@ async def lifespan(app: FastAPI):
     # Import all models so Base.metadata knows about them
     from app.db import base as _models  # noqa: F401
     from app.core.security import get_password_hash
-    from app.db.session import AsyncSessionLocal
-    from sqlalchemy import select
+    from sqlalchemy import select, text
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Apply automated self-healing schema updates for existing tables
+        try:
+            columns_to_verify = [
+                ("thumbnail_url", "VARCHAR"),
+                ("scientific_name", "VARCHAR"),
+                ("disease_category", "VARCHAR"),
+                ("spread_risk", "VARCHAR"),
+                ("contagiousness", "VARCHAR"),
+                ("crop_stage_affected", "VARCHAR"),
+                ("farmer_report", "JSON"),
+                ("scientist_report", "JSON"),
+                ("image_quality", "JSON"),
+                ("weather_risk", "JSON"),
+                ("scan_latitude", "DOUBLE PRECISION"),
+                ("scan_longitude", "DOUBLE PRECISION"),
+                ("scan_location_name", "VARCHAR"),
+                ("crop_type", "VARCHAR")
+            ]
+            for col_name, col_type in columns_to_verify:
+                await conn.execute(text(f"ALTER TABLE disease_detections ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+            logger.info("Database schema migration verification completed successfully.")
+        except Exception as mig_err:
+            logger.warning(f"Resilient migration check skipped: {mig_err}")
     logger.info("Database tables created / verified.")
 
     # Validate Supabase connection configuration
@@ -46,6 +68,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error checking Supabase client startup status: {es_err}")
 
     # Seed a demo user if one doesn't exist
+    from app.db.session import AsyncSessionLocal
     async with AsyncSessionLocal() as session:
         from app.models.user import User
         result = await session.execute(select(User).where(User.email == "demo@agricosmo.com"))
