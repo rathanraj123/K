@@ -86,12 +86,15 @@ async def lifespan(app: FastAPI):
     # 2. Preload ML Models to prevent cold-starts
     async def preload_ml_models():
         try:
-            logger.info("Preloading ML Models (YOLO-World & TFLite)...")
-            from app.modules.detection.yolo_validator import yolo_validator
+            logger.info("Preloading ML Models (TFLite & optionally YOLO)...")
             from app.modules.detection.service import detection_service
             
-            # YOLO is CPU-bound and synchronous, run in thread to avoid blocking loop
-            await asyncio.to_thread(yolo_validator.preload_model)
+            if not settings.LOW_MEMORY_MODE:
+                from app.modules.detection.yolo_validator import yolo_validator
+                # YOLO is CPU-bound and synchronous, run in thread to avoid blocking loop
+                await asyncio.to_thread(yolo_validator.preload_model)
+            else:
+                logger.info("Low Memory Mode: skipping YOLO-World preloading on startup.")
             
             # TFLite is already async
             await detection_service.preload_model()

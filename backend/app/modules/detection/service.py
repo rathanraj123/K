@@ -112,19 +112,30 @@ class DetectionService:
         det_id = detection_id or str(uuid.uuid4())
 
         # ── Stage 0: Scene Understanding & Auto-Cropping (YOLO-World) ──
-        try:
-            from app.modules.detection.yolo_validator import yolo_validator
-            intelligence_scores, cropped_bytes = yolo_validator.analyze_and_crop(image_bytes)
-            
-            # Inject YOLO intelligence scores into result
-            result["yolo_intelligence"] = intelligence_scores
-            
-            # Replace original image with isolated leaf for better inference
-            image_bytes = cropped_bytes
-            
-        except Exception as e:
-            logger.error(f"Scene understanding validation failed: {e}")
-            raise ValueError(str(e))
+        if not settings.LOW_MEMORY_MODE:
+            try:
+                from app.modules.detection.yolo_validator import yolo_validator
+                intelligence_scores, cropped_bytes = yolo_validator.analyze_and_crop(image_bytes)
+                
+                # Inject YOLO intelligence scores into result
+                result["yolo_intelligence"] = intelligence_scores
+                
+                # Replace original image with isolated leaf for better inference
+                image_bytes = cropped_bytes
+                
+            except Exception as e:
+                logger.error(f"Scene understanding validation failed: {e}")
+                raise ValueError(str(e))
+        else:
+            logger.info("Low Memory Mode: skipping YOLO scene understanding validation.")
+            result["yolo_intelligence"] = {
+                "leaf_detected": True,
+                "is_rice_leaf": True,
+                "leaf_coverage_pct": 100.0,
+                "background_noise": "low",
+                "recommendation": "Proceed (Low Memory Mode - YOLO bypassed)",
+                "detected_objects": ["leaf"]
+            }
 
         # ── Stage 1: Image Quality Analysis & Validation ─────────
         try:

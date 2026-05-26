@@ -13,6 +13,7 @@ class BaseConfig(BaseSettings):
     ENVIRONMENT: str = "development"  # development | production | testing
     ENV: str = "dev" # dev | prod (backward compatibility)
     LOG_LEVEL: str = "DEBUG"
+    LOW_MEMORY_MODE: bool = os.getenv("LOW_MEMORY_MODE", "false").lower() in ("true", "1") or os.getenv("RENDER") == "true"
     
     # Security
     SECRET_KEY: str = "super_secret_for_dev_only"
