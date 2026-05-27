@@ -17,6 +17,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@AgriCosmo" />
     <meta name="twitter:image" content="/favicon.ico" />
+    <script>
+      window.addEventListener('vite:preloadError', (event) => {
+        window.location.reload();
+      });
+    </script>
   </head>
 
   <body>
