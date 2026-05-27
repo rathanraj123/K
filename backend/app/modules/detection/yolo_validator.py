@@ -4,7 +4,6 @@ import io
 import logging
 from typing import Dict, Any, Tuple, Optional
 from PIL import Image
-from ultralytics import YOLOWorld
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +32,13 @@ class YoloValidator:
         
     def _load_model(self):
         if self.model is None:
+            try:
+                from ultralytics import YOLOWorld
+            except ImportError:
+                raise ImportError(
+                    "The 'ultralytics' library is required to use YOLO-World scene validation. "
+                    "Please install it using: pip install ultralytics"
+                )
             logger.info(f"Loading YOLO-World model: {self.model_path}...")
             self.model = YOLOWorld(self.model_path)
             self.model.set_classes(self.classes)
