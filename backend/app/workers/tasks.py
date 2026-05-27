@@ -175,7 +175,10 @@ async def run_detection_async(
                 except Exception as telemetry_err:
                     logger.error(f"Failed to process telemetry in background task: {telemetry_err}")
 
-                await db.commit()
+                try:
+                    await db.commit()
+                except Exception as commit_err:
+                    logger.debug(f"Telemetry session cleanup commit skipped or failed: {commit_err}")
 
                 logger.info(
                     f"Detection {detection_id} completed in {duration_ms:.0f}ms — "
@@ -205,9 +208,10 @@ async def run_detection_async(
                 except Exception:
                     pass
                 
-                await db.delete(detection)
+                detection.status = "failed"
+                detection.explanation = str(e)
                 await db.commit()
-                logger.info(f"Deleted failed detection record {detection_id} from database.")
+                logger.info(f"Updated failed detection record {detection_id} in database to status failed.")
 
 
 @celery_app.task(bind=True, max_retries=3)
