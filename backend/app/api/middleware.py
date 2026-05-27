@@ -8,29 +8,47 @@ import logging
 
 logger = logging.getLogger("api.middleware")
 
-class ObservabilityMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        req_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+class ObservabilityMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Reconstruct X-Request-ID from headers
+        headers_dict = dict(scope.get("headers", []))
+        req_id = headers_dict.get(b"x-request-id", b"").decode("utf-8")
+        if not req_id:
+            req_id = str(uuid.uuid4())
+
         request_id_var.set(req_id)
-
         start_time = time.perf_counter()
-        request.state.request_id = req_id
-
-        # Track global metrics
         global_metrics.total_requests += 1
 
-        # Normalise endpoint path (strip query params) to avoid high cardinality
-        endpoint = request.url.path
-        method = request.method
+        endpoint = scope.get("path", "")
+        method = scope.get("method", "GET")
         status_code = 500
 
+        async def send_wrapper(message):
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+                headers = list(message.get("headers", []))
+                process_time_ms = (time.perf_counter() - start_time) * 1000
+                
+                headers.append((b"x-request-id", req_id.encode("utf-8")))
+                headers.append((b"x-process-time", str(round(process_time_ms, 2)).encode("utf-8")))
+                headers.append((b"x-content-type-options", b"nosniff"))
+                headers.append((b"x-frame-options", b"DENY"))
+                headers.append((b"x-xss-protection", b"1; mode=block"))
+                message["headers"] = headers
+                
+            await send(message)
+
         try:
-            response = await call_next(request)
-            status_code = response.status_code
-
-            if response.status_code >= 400:
-                global_metrics.failed_requests += 1
-
+            await self.app(scope, receive, send_wrapper)
         except Exception as e:
             global_metrics.failed_requests += 1
             raise e
@@ -38,6 +56,9 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             process_time = time.perf_counter() - start_time
             process_time_ms = process_time * 1000
             global_metrics.total_response_time_ms += process_time_ms
+            
+            if status_code >= 400:
+                global_metrics.failed_requests += 1
 
             # ── Record Hourly API Metric Asynchronously ─────────────────────
             try:
@@ -93,18 +114,10 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
                 extra={
                     "extra_meta": {
                         "method": method,
-                        "url": str(request.url),
+                        "url": endpoint,
                         "status_code": status_code,
                         "execution_time_ms": round(process_time_ms, 2),
                         "request_id": req_id,
                     }
                 },
             )
-
-        if "response" in locals():
-            response.headers["X-Request-ID"] = req_id
-            response.headers["X-Process-Time"] = str(round(process_time_ms, 2))
-            response.headers["X-Content-Type-Options"] = "nosniff"
-            response.headers["X-Frame-Options"] = "DENY"
-            response.headers["X-XSS-Protection"] = "1; mode=block"
-            return response

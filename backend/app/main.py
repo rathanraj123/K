@@ -233,8 +233,7 @@ async def db_health():
 def root():
     return {"message": "Welcome to the AgriCosmo AI Enterprise Platform API"}
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def _handle_websocket(websocket: WebSocket):
     from app.core.websocket_manager import manager
     import json
     await manager.connect(websocket)
@@ -249,3 +248,11 @@ async def websocket_endpoint(websocket: WebSocket):
                 pass
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await _handle_websocket(websocket)
+
+@app.websocket("/api/v1/ws")
+async def websocket_endpoint_v1(websocket: WebSocket):
+    await _handle_websocket(websocket)
