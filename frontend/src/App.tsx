@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import React, { useEffect, Suspense, lazy } from 'react';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -128,7 +128,7 @@ const App = () => {
                 <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><AdminAnalyticsPage /></ProtectedRoute>} />
 
                 {/* Protected Scientist Routes */}
-                <Route path="/scientist" element={<ProtectedRoute requireRole={['scientist', 'admin']}><ScientistDashboard /></ProtectedRoute>} />
+                <Route path="/scientist" element={<Navigate to="/dashboard" replace />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
