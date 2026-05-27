@@ -56,6 +56,8 @@ class BaseConfig(BaseSettings):
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:5173",
+        "https://agricosmoai.vercel.app",
+        "https://agricosmoai-oyt3tar92-rathanraj123s-projects.vercel.app",
         "*"
     ]
     BACKEND_CORS_ORIGINS: Optional[Union[List[str], str]] = None
