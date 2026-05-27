@@ -30,13 +30,13 @@ class EmbeddingService:
                             has_onnx = False
                             for root, dirs, files in os.walk(cache_dir):
                                 for f in files:
-                                    if f.endswith(".onnx"):
+                                    if f.endswith(".onnx") and os.path.exists(os.path.join(root, f)):
                                         has_onnx = True
                                         break
                                 if has_onnx:
                                     break
                             if not has_onnx:
-                                logger.warning("Incomplete model cache detected (no .onnx file found). Purging cache directory.")
+                                logger.warning("Incomplete or broken model cache detected. Purging cache directory.")
                                 try:
                                     shutil.rmtree(cache_dir)
                                 except Exception as rmerr:
@@ -48,11 +48,11 @@ class EmbeddingService:
                     self.model = await asyncio.to_thread(load_embed)
                     logger.info("Embedding model loaded successfully.")
         return self.model
-
+ 
     async def generate_embedding(self, text: Union[str, List[str]]) -> Union[List[float], List[List[float]]]:
         """Generate 768-d embeddings for the given text."""
-        model = await self._get_model()
         try:
+            model = await self._get_model()
             # fastembed requires a list of strings
             is_single = isinstance(text, str)
             texts = [text] if is_single else text
