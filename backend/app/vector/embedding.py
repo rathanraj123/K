@@ -60,7 +60,8 @@ class EmbeddingService:
                 headers = {"Authorization": f"Bearer {token}"}
                 inputs = [text] if isinstance(text, str) else text
                 
-                async with httpx.AsyncClient(timeout=4.0) as client:
+                # Reduced timeout to 2.0 seconds to keep chat responses fast
+                async with httpx.AsyncClient(timeout=2.0) as client:
                     response = await client.post(
                         f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model_name}",
                         headers=headers,
@@ -112,6 +113,14 @@ class EmbeddingService:
                 logger.warning(f"Hugging Face Inference API failed, falling back to local: {api_err}")
 
         # 2. Fall back to local FastEmbed if API fails or no token is provided
+        # EXTREMELY IMPORTANT: In production / low memory mode, do NOT fall back to local model loading,
+        # as importing and running ONNX model files will exceed 512MB RAM limit and crash the server.
+        if os.getenv("LOW_MEMORY_MODE", "false").lower() in ("true", "1") or os.getenv("RENDER") == "true":
+            logger.warning("Low Memory Mode: skipping local FastEmbed fallback to prevent RAM overflow.")
+            if isinstance(text, str):
+                return [0.0] * 768
+            return [[0.0] * 768 for _ in text]
+
         try:
             model = await self._get_model()
             is_single = isinstance(text, str)

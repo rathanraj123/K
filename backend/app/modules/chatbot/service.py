@@ -111,30 +111,34 @@ class ChatbotService:
         system_prompt = self._get_system_prompt(user_role)
         logger.info(f"Chat stream for user_id={user_id}, role={user_role}, session={session_id}")
 
-        # 1. Fetch L1 Active Cache
-        l1_recent = await l1_cache.get_active_context(session_id)
+        # Fetch L1/L2 history and generate embedding concurrently
+        async def fetch_history():
+            # 1. Fetch L1 Active Cache
+            l1_recent = await l1_cache.get_active_context(session_id)
+            # 2. Fetch L2 Episodic Memory (if L1 miss)
+            l2_episodic = []
+            if not l1_recent:
+                try:
+                    l2_episodic = await es_memory.get_recent_messages(session_id=session_id, user_id=user_id, limit=20)
+                except Exception as e:
+                    logger.error(f"Elasticsearch error during get_recent_messages: {e}")
+            return l1_recent, l2_episodic
+
+        (l1_recent, l2_episodic), query_embedding = await asyncio.gather(
+            fetch_history(),
+            embedding_service.generate_embedding(new_message)
+        )
         
-        # 2. Fetch L2 Episodic Memory (if L1 miss)
-        l2_episodic = []
-        if not l1_recent:
-            try:
-                l2_episodic = await es_memory.get_recent_messages(session_id=session_id, user_id=user_id, limit=20)
-            except Exception as e:
-                logger.error(f"Elasticsearch error during get_recent_messages: {e}")
-                l2_episodic = []
-            
-        # 3. Generate query embedding for L3 Semantic Search
-        query_embedding = await embedding_service.generate_embedding(new_message)
-        
-        # 4. Fetch L3 Semantic Memory (KNN)
+        # 3. Fetch L3 Semantic Memory (KNN)
         l3_semantic = []
-        try:
-            l3_semantic = await es_memory.semantic_search(query_vector=query_embedding, user_id=user_id, limit=3)
-        except Exception as e:
-            logger.error(f"Elasticsearch error during semantic_search: {e}")
-            l3_semantic = []
+        # Skip semantic search if the query embedding is empty/zero fallback to prevent slow/invalid queries
+        if query_embedding and any(query_embedding):
+            try:
+                l3_semantic = await es_memory.semantic_search(query_vector=query_embedding, user_id=user_id, limit=3)
+            except Exception as e:
+                logger.error(f"Elasticsearch error during semantic_search: {e}")
         
-        # 5. Build Hierarchical Context
+        # 4. Build Hierarchical Context
         formatted_messages = context_builder.build_hierarchical_context(
             system_prompt=system_prompt,
             l1_recent_messages=l1_recent,
