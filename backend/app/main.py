@@ -109,11 +109,12 @@ async def lifespan(app: FastAPI):
     import asyncio
     asyncio.create_task(bg_es_setup())
 
-    # 2. Preload ML Models to prevent cold-starts
+    # 2. Preload ML Models & Embeddings to prevent cold-starts
     async def preload_ml_models():
         try:
-            logger.info("Preloading ML Models (TFLite & optionally YOLO)...")
+            logger.info("Preloading ML Models (TFLite & optionally YOLO) and Embedding Model...")
             from app.modules.detection.service import detection_service
+            from app.vector.embedding import embedding_service
             
             if not settings.LOW_MEMORY_MODE:
                 from app.modules.detection.yolo_validator import yolo_validator
@@ -124,9 +125,13 @@ async def lifespan(app: FastAPI):
             
             # TFLite is already async
             await detection_service.preload_model()
-            logger.info("ML Models preloaded successfully.")
+            
+            # Preload FastEmbed embedding model
+            await embedding_service._get_model()
+            
+            logger.info("ML and Embedding models preloaded successfully.")
         except Exception as e:
-            logger.error(f"Failed to preload ML models: {e}")
+            logger.error(f"Failed to preload models: {e}")
             
     asyncio.create_task(preload_ml_models())
 
