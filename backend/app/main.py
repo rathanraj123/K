@@ -126,8 +126,11 @@ async def lifespan(app: FastAPI):
             # TFLite is already async
             await detection_service.preload_model()
             
-            # Preload FastEmbed embedding model
-            await embedding_service._get_model()
+            # Preload FastEmbed embedding model (skip in low memory mode / production Render to avoid download overhead)
+            if not settings.LOW_MEMORY_MODE:
+                await embedding_service._get_model()
+            else:
+                logger.info("Low Memory Mode: skipping FastEmbed preloading on startup.")
             
             logger.info("ML and Embedding models preloaded successfully.")
         except Exception as e:

@@ -1,6 +1,8 @@
 import logging
-from typing import List, Union
+import os
 import asyncio
+from typing import List, Union
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +52,73 @@ class EmbeddingService:
         return self.model
  
     async def generate_embedding(self, text: Union[str, List[str]]) -> Union[List[float], List[List[float]]]:
-        """Generate 768-d embeddings for the given text."""
+        """Generate 768-d embeddings. Uses Hugging Face Inference API first, falls back to local fastembed."""
+        # 1. Try Hugging Face Inference API first (0MB memory, ultra-fast)
+        token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
+        if token:
+            try:
+                headers = {"Authorization": f"Bearer {token}"}
+                inputs = [text] if isinstance(text, str) else text
+                
+                async with httpx.AsyncClient(timeout=4.0) as client:
+                    response = await client.post(
+                        f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model_name}",
+                        headers=headers,
+                        json={"inputs": inputs, "options": {"wait_for_model": True}}
+                    )
+                    if response.status_code == 200:
+                        result = response.json()
+                        
+                        # Helper to check the nested depth of the returned list
+                        def get_depth(lst):
+                            if isinstance(lst, list):
+                                return 1 + get_depth(lst[0]) if lst else 1
+                            return 0
+                            
+                        depth = get_depth(result)
+                        
+                        if depth == 1:
+                            # 1D list [dim] -> return directly for single, or wrap for batch
+                            if isinstance(text, str):
+                                return result
+                            return [result]
+                            
+                        elif depth == 2:
+                            # 2D list: Could be:
+                            # a) [batch_size, dim] -> sentence-level batch. Return directly.
+                            # b) [num_tokens, dim] -> single text token-level. Need mean pooling.
+                            if isinstance(text, str):
+                                # Single text: pool the tokens
+                                num_tokens = len(result)
+                                dim = len(result[0])
+                                pooled = [sum(result[t][d] for t in range(num_tokens)) / num_tokens for d in range(dim)]
+                                return pooled
+                            else:
+                                # Batch: assuming already sentence-level pooled
+                                return result
+                                
+                        elif depth == 3:
+                            # 3D list [batch_size, num_tokens, dim] -> token-level batch. Mean pool each.
+                            pooled_batch = []
+                            for sentence_tokens in result:
+                                num_tokens = len(sentence_tokens)
+                                dim = len(sentence_tokens[0])
+                                pooled = [sum(sentence_tokens[t][d] for t in range(num_tokens)) / num_tokens for d in range(dim)]
+                                pooled_batch.append(pooled)
+                            if isinstance(text, str):
+                                return pooled_batch[0]
+                            return pooled_batch
+            except Exception as api_err:
+                logger.warning(f"Hugging Face Inference API failed, falling back to local: {api_err}")
+
+        # 2. Fall back to local FastEmbed if API fails or no token is provided
         try:
             model = await self._get_model()
-            # fastembed requires a list of strings
             is_single = isinstance(text, str)
             texts = [text] if is_single else text
             
             # Offload generation to thread
             def generate():
-                # embed returns an iterable of numpy arrays
                 return list(model.embed(texts))
                 
             embeddings = await asyncio.to_thread(generate)
@@ -68,7 +127,7 @@ class EmbeddingService:
                 return embeddings[0].tolist()
             return [e.tolist() for e in embeddings]
         except Exception as e:
-            logger.error(f"Failed to generate embedding: {str(e)}")
+            logger.error(f"Failed to generate embedding locally: {str(e)}")
             # Return empty embedding (768 zeros) as fallback to prevent crashing the indexing process
             if isinstance(text, str):
                 return [0.0] * 768
