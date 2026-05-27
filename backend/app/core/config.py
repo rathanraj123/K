@@ -41,6 +41,7 @@ class BaseConfig(BaseSettings):
     # AI & Third Party APIs
     GROQ_API_KEY: Optional[str] = None
     HUGGINGFACE_API_KEY: Optional[str] = None
+    HF_TOKEN: Optional[str] = None
     OPENWEATHER_API_KEY: Optional[str] = None
     NEWS_API_KEY: str = "3adf64d4b590437390c62a98cb682d49"
     DATA_GOV_API_KEY: str = "579b464db66ec23bdd00000102b36f18cefb44a44aae8335aad3af27"
@@ -97,6 +98,11 @@ class BaseConfig(BaseSettings):
         if not self.SUPABASE_KEY:
             self.SUPABASE_KEY = self.SUPABASE_SERVICE_ROLE_KEY or self.SUPABASE_ANON_KEY
             
+        # Export HF_TOKEN to os.environ so huggingface_hub can read it
+        if self.HF_TOKEN:
+            import os
+            os.environ["HF_TOKEN"] = self.HF_TOKEN
+
         # Handle parsed backend cors origins
         # Handle parsed backend cors origins / string representation
         raw_origins = self.BACKEND_CORS_ORIGINS if self.BACKEND_CORS_ORIGINS is not None else self.CORS_ORIGINS
