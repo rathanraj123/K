@@ -14,7 +14,7 @@ import { fetchAgricultureNews, NewsArticle } from '@/services/newsService';
 import { fetchMarketPrices, MarketPrice } from '@/services/marketPriceService';
 import { RegionalReport } from '@/services/agricultureReportService';
 
-const ScientistDashboardView = lazy(() => import('@/components/scientist/ScientistDashboardView'));
+const ScientistDashboard = lazy(() => import('@/pages/scientist/ScientistDashboard'));
 
 interface WeatherInsights {
   temperature_c?: number;
@@ -43,7 +43,7 @@ export default function DashboardPage() {
   if (userRole === 'scientist' || userRole === 'admin') {
     return (
       <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" /></div>}>
-        <ScientistDashboardView />
+        <ScientistDashboard />
       </Suspense>
     );
   }

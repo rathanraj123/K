@@ -39,7 +39,7 @@ export default function Navbar() {
 
   const scientistLinks = [
     { to: '/', label: 'Home' },
-    { to: '/scientist', label: 'Intelligence' },
+    { to: '/dashboard', label: 'Intelligence' },
     { to: '/history', label: 'Database' },
     { to: '/chat', label: 'AI Assistant' },
   ];
@@ -59,7 +59,7 @@ export default function Navbar() {
     navigate('/login');
   };
 
-  if (isScientistRoute) {
+  if (isScientistRoute || (location.pathname === '/dashboard' && isScientist)) {
     return null; // The scientist dashboard has its own dedicated header (IntelligenceHeader)
   }
 
@@ -71,7 +71,7 @@ export default function Navbar() {
     >
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to={isAdminRoute ? '/admin' : (isScientistRoute ? '/scientist' : '/')} className="flex items-center gap-2 group">
+          <Link to={isAdminRoute ? '/admin' : (isScientist ? '/dashboard' : '/')} className="flex items-center gap-2 group">
             <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all hover:scale-105">
               <Leaf className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -81,7 +81,7 @@ export default function Navbar() {
             {isAdminRoute && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold border border-destructive/20 animate-pulse">Admin</span>
             )}
-            {isScientistRoute && !isAdminRoute && (
+            {isScientist && !isAdminRoute && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-semibold border border-blue-500/20">Scientist</span>
             )}
           </Link>

@@ -116,7 +116,7 @@ export default function AuthPage() {
 
         // Role-based redirect
         if (userRole === 'scientist') {
-          navigate('/scientist');
+          navigate('/dashboard');
         } else if (userRole === 'admin') {
           navigate('/admin');
         } else {
