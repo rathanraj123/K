@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { safeDate, cn } from '@/lib/utils';
 import { fetchAgricultureNews, NewsArticle } from '@/services/newsService';
 import { fetchMarketPrices, MarketPrice } from '@/services/marketPriceService';
-import { fetchRegionalReports, RegionalReport } from '@/services/agricultureReportService';
+import { RegionalReport } from '@/services/agricultureReportService';
 
 const ScientistDashboardView = lazy(() => import('@/components/scientist/ScientistDashboardView'));
 
@@ -54,9 +54,136 @@ export default function DashboardPage() {
   
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [marketPrices, setMarketPrices] = useState<MarketPrice[]>([]);
-  const [regionalReports, setRegionalReports] = useState<RegionalReport[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
+
+  // Generate Regional Reports dynamically from live weather, market prices, and scan history
+  const regionalReports = useMemo<RegionalReport[]>(() => {
+    const reports: RegionalReport[] = [];
+    const regionName = weatherData?.city || "Your District";
+
+    // 1. Disease / Scan Card
+    if (scanHistory && scanHistory.length > 0) {
+      const latestScan = scanHistory[0];
+      reports.push({
+        id: "rep_1",
+        title: `Crop Health: ${latestScan.diseaseName}`,
+        description: `Your last scan detected ${latestScan.diseaseName} with a severity of ${latestScan.severity || 'medium'}. Monitor your crops for progression.`,
+        severity: latestScan.severity === 'critical' ? 'critical' : latestScan.severity === 'high' ? 'high' : 'medium',
+        type: "disease",
+        date: latestScan.createdAt || new Date().toISOString(),
+        region: "Your Farm"
+      });
+    } else {
+      reports.push({
+        id: "rep_1",
+        title: "Crop Disease Monitor",
+        description: "No active disease threats detected on your farm. Keep uploading photos of plant leaves for regular health checks.",
+        severity: "low",
+        type: "disease",
+        date: new Date().toISOString(),
+        region: "Your District"
+      });
+    }
+
+    // 2. Weather Card
+    if (weatherData && weatherData.agri_warnings && weatherData.agri_warnings.length > 0) {
+      reports.push({
+        id: "rep_2",
+        title: "Weather Alert",
+        description: weatherData.agri_warnings.join('. '),
+        severity: "critical",
+        type: "weather",
+        date: new Date().toISOString(),
+        region: regionName
+      });
+    } else if (weatherData) {
+      reports.push({
+        id: "rep_2",
+        title: "Weather Conditions",
+        description: `Current condition: ${weatherData.description || 'Clear'}. Temp: ${weatherData.temperature_c}°C, Humidity: ${weatherData.humidity_percent}%. Stable conditions for outdoor activities.`,
+        severity: "low",
+        type: "weather",
+        date: new Date().toISOString(),
+        region: regionName
+      });
+    } else {
+      reports.push({
+        id: "rep_2",
+        title: "Weather Report",
+        description: "Loading localized weather warnings and insights...",
+        severity: "low",
+        type: "weather",
+        date: new Date().toISOString(),
+        region: regionName
+      });
+    }
+
+    // 3. Market Card
+    if (marketPrices && marketPrices.length > 0) {
+      const topCrop = marketPrices[0];
+      reports.push({
+        id: "rep_3",
+        title: `Mandi Price: ${topCrop.commodity}`,
+        description: `${topCrop.commodity} is trading at ₹${topCrop.modal_price}/quintal in ${topCrop.market}. Price trend is ${topCrop.trend === 'up' ? 'rising' : topCrop.trend === 'down' ? 'declining' : 'stable'}.`,
+        severity: topCrop.trend === 'down' ? 'medium' : 'low',
+        type: "market",
+        date: new Date().toISOString(),
+        region: topCrop.market
+      });
+    } else {
+      reports.push({
+        id: "rep_3",
+        title: "Market Procurement",
+        description: "Government procurement updates and mandi crop price feeds are loading...",
+        severity: "low",
+        type: "market",
+        date: new Date().toISOString(),
+        region: "Statewide"
+      });
+    }
+
+    // 4. Advisory Card
+    if (weatherData) {
+      const humidity = weatherData.humidity_percent || 50;
+      const temp = weatherData.temperature_c || 25;
+      let advisoryText = "Split application of Nitrogen fertilizer is recommended during early morning hours.";
+      let severityVal: 'low' | 'medium' | 'high' | 'critical' = "low";
+
+      if (humidity > 80) {
+        advisoryText = "High humidity detected. Reduce overhead watering to minimize fungal spore germination.";
+        severityVal = "medium";
+      } else if (temp > 35) {
+        advisoryText = "Extreme temperature warning. Mulch soil beds to preserve moisture and water in evening.";
+        severityVal = "high";
+      } else if (weatherData.rainfall_mm && weatherData.rainfall_mm > 2) {
+        advisoryText = "Recent rainfall. Postpone scheduled chemical sprays and check field drainage pathways.";
+        severityVal = "medium";
+      }
+
+      reports.push({
+        id: "rep_4",
+        title: "Agronomy Advisory",
+        description: advisoryText,
+        severity: severityVal,
+        type: "advisory",
+        date: new Date().toISOString(),
+        region: regionName
+      });
+    } else {
+      reports.push({
+        id: "rep_4",
+        title: "Soil & Crop Advisory",
+        description: "Awaiting local environmental parameters to generate tailored crop recommendations.",
+        severity: "low",
+        type: "advisory",
+        date: new Date().toISOString(),
+        region: "Your District"
+      });
+    }
+
+    return reports;
+  }, [weatherData, marketPrices, scanHistory]);
 
   const hour = safeDate().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -68,14 +195,12 @@ export default function DashboardPage() {
       const loadExternalData = async () => {
         setIsLoading(true);
         try {
-          const [newsData, marketData, reportData] = await Promise.all([
+          const [newsData, marketData] = await Promise.all([
             fetchAgricultureNews(),
-            fetchMarketPrices(),
-            fetchRegionalReports(17.3850, 78.4867) // Using default coords or user coords if available
+            fetchMarketPrices()
           ]);
           setNews(newsData);
           setMarketPrices(marketData);
-          setRegionalReports(reportData);
         } catch (e) {
           console.error("Error loading dashboard data", e);
         } finally {
@@ -113,8 +238,6 @@ export default function DashboardPage() {
           (pos) => {
             clearTimeout(timeoutId);
             doFetchWeather(pos.coords.latitude, pos.coords.longitude);
-            // Re-fetch regional reports with precise location
-            fetchRegionalReports(pos.coords.latitude, pos.coords.longitude).then(setRegionalReports);
           },
           () => {
             clearTimeout(timeoutId);
