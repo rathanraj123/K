@@ -5,11 +5,17 @@ export const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || import.meta.env.M
 
 export const API_URL = (() => {
   let url = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-  // Standardize trailing slashes and version prefixes
+  // Standardize trailing slashes
   url = url.replace(/\/+$/, '');
-  if (!url.endsWith('/api/v1')) {
+  
+  // Safe normalization: ensure there is at least one /api/v1 at the end if missing
+  if (!/\/api\/v1/i.test(url)) {
     url += '/api/v1';
   }
+  
+  // Self-heal: collapse any duplicate /api/v1 patterns (e.g. /api/v1/api/v1) to a single /api/v1
+  url = url.replace(/(\/api\/v1)+/gi, '/api/v1');
+  
   return url;
 })();
 
