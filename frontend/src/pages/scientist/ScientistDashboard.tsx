@@ -203,12 +203,12 @@ export default function ScientistDashboard() {
                 AI-powered disease intelligence and agricultural monitoring dashboard
               </p>
             </div>
-            <button 
-              onClick={() => window.location.href = '/upload'} 
+            <Link 
+              to="/upload" 
               className="h-11 px-6 rounded-xl font-bold text-slate-900 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] transition-all flex items-center gap-2 cursor-pointer z-50">
               <Activity className="w-4 h-4" />
               New Analysis
-            </button>
+            </Link>
           </motion.div>
 
           <AnimatePresence>
