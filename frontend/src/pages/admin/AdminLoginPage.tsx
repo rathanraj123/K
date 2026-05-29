@@ -1,24 +1,39 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Leaf, Eye, EyeOff } from 'lucide-react';
+import { Shield, Leaf, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
+import { api } from '@/lib/api';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { setUserRole } = useAppStore();
+  const { setToken, setUserName, setUserRole, logout } = useAppStore();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'admin@agricosmo.ai' && password === 'admin123') {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const formData = new FormData();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const data = await api.post<{access_token: string}>('/auth/login/access-token', formData);
+      logout();
+      setToken(data.access_token);
       setUserRole('admin');
+      setUserName('System Admin');
       navigate('/admin');
-    } else {
-      setError('Invalid credentials. Try admin@agricosmo.ai / admin123');
+    } catch (err: any) {
+      setError(err.message || 'Invalid credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -64,8 +79,8 @@ export default function AdminLoginPage() {
             </div>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
-          <button type="submit" className="w-full py-2.5 rounded-xl gradient-primary text-primary-foreground font-semibold text-sm shadow-lg hover:opacity-95 transition-opacity">
-            Sign In
+          <button disabled={isLoading} type="submit" className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-primary text-primary-foreground font-semibold text-sm shadow-lg hover:opacity-95 transition-opacity disabled:opacity-50">
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign In"}
           </button>
         </form>
 

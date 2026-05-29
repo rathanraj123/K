@@ -29,10 +29,10 @@ export default function AdminAnalyticsPage() {
           api.get<any>('/admin/stats')
         ]);
 
-        if (analyticsRes.data) {
+        if (analyticsRes) {
           // Process Growth Data (7-day trend)
-          if (analyticsRes.data.weekly_scans) {
-            const mappedGrowth = analyticsRes.data.weekly_scans.map((d: any) => ({
+          if (analyticsRes.weekly_scans) {
+            const mappedGrowth = analyticsRes.weekly_scans.map((d: any) => ({
               day: d.name,
               scans: d.scans
             }));
@@ -40,8 +40,8 @@ export default function AdminAnalyticsPage() {
           }
 
           // Process Disease Dist (Scans by Disease)
-          if (analyticsRes.data.disease_trends) {
-            const mappedDiseases = analyticsRes.data.disease_trends.map((d: any) => ({
+          if (analyticsRes.disease_trends) {
+            const mappedDiseases = analyticsRes.disease_trends.map((d: any) => ({
               disease: d.name.replace(/_/g, ' '),
               scans: d.count
             }));
@@ -49,10 +49,10 @@ export default function AdminAnalyticsPage() {
           }
 
           // Process Regional Distribution
-          if (analyticsRes.data.regional_distribution) {
+          if (analyticsRes.regional_distribution) {
             // Sort to look better on pie chart and calculate percentages
-            const totalUsers = analyticsRes.data.regional_distribution.reduce((acc: number, curr: any) => acc + curr.value, 0);
-            const mappedRegions = analyticsRes.data.regional_distribution.map((d: any) => ({
+            const totalUsers = analyticsRes.regional_distribution.reduce((acc: number, curr: any) => acc + curr.value, 0);
+            const mappedRegions = analyticsRes.regional_distribution.map((d: any) => ({
               region: d.region,
               value: Math.round((d.value / Math.max(1, totalUsers)) * 100)
             })).sort((a: any, b: any) => b.value - a.value);
@@ -61,12 +61,12 @@ export default function AdminAnalyticsPage() {
         }
 
         // Process Metrics
-        if (statsRes.data) {
+        if (statsRes) {
           setMetrics(prev => ({
             ...prev,
             accuracy: '98.5%', // Hardcoded for demo/feel, could be dynamic
-            avgInference: `${statsRes.data.avg_latency || 0}ms`,
-            growthRate: `${statsRes.data.total_scans} scans (Total)`
+            avgInference: `${statsRes.avg_latency || 0}ms`,
+            growthRate: `${statsRes.total_scans} scans (Total)`
           }));
         }
 

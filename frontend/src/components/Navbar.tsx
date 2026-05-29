@@ -39,9 +39,11 @@ export default function Navbar() {
 
   const scientistLinks = [
     { to: '/', label: 'Home' },
-    { to: '/dashboard', label: 'Intelligence' },
-    { to: '/history', label: 'Database' },
-    { to: '/chat', label: 'AI Assistant' },
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/scientist/research', label: 'Research Hub' },
+    { to: '/upload', label: 'Upload' },
+    { to: '/history', label: 'History' },
+    { to: '/chat', label: 'Expert Chat' },
   ];
 
   const adminLinks = [
@@ -59,9 +61,6 @@ export default function Navbar() {
     navigate('/login');
   };
 
-  if (isScientistRoute || (location.pathname === '/dashboard' && isScientist)) {
-    return null; // The scientist dashboard has its own dedicated header (IntelligenceHeader)
-  }
 
   return (
     <motion.nav
@@ -111,6 +110,18 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
+            {(isScientistRoute || isAdminRoute) && (
+              <div className="hidden md:flex items-center relative mr-2">
+                <input 
+                  type="text" 
+                  placeholder="Search disease, district..." 
+                  className="pl-8 pr-4 py-1.5 text-sm rounded-full bg-accent/50 border border-border/50 focus:border-primary focus:bg-background outline-none w-48 focus:w-64 transition-all"
+                />
+                <svg className="w-4 h-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors hidden sm:block"

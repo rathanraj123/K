@@ -158,7 +158,15 @@ def get_settings() -> BaseConfig:
     if env_state in ("production", "prod"):
         # Fail-fast validation
         if not os.getenv("SECRET_KEY") or os.getenv("SECRET_KEY") == "super_secret_for_dev_only":
-            raise ValueError("SECRET_KEY MUST be properly set in production environment!")
+            raise ValueError("CRITICAL SECURITY ERROR: SECRET_KEY MUST be properly set in production environment!")
+            
+        if not os.getenv("DATABASE_URL") and not (os.getenv("POSTGRES_USER") and os.getenv("POSTGRES_PASSWORD") and os.getenv("POSTGRES_SERVER")):
+            raise ValueError("CRITICAL ERROR: DATABASE_URL (or Postgres credentials) MUST be set in production!")
+            
+        if not os.getenv("SUPABASE_URL") or not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
+            import logging
+            logging.warning("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing. App will run in degraded storage mode.")
+            
         return ProductionSettings()
         
     elif env_state in ("testing", "test"):

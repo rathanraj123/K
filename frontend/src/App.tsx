@@ -25,6 +25,7 @@ const AdminUsersPage = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminScansPage = lazy(() => import("./pages/admin/AdminScansPage"));
 const AdminAnalyticsPage = lazy(() => import("./pages/admin/AdminAnalyticsPage"));
 const ScientistDashboard = lazy(() => import("./pages/scientist/ScientistDashboard"));
+const ResearchAnalyticsPage = lazy(() => import("./pages/scientist/ResearchAnalyticsPage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 
@@ -129,6 +130,7 @@ const App = () => {
 
                 {/* Protected Scientist Routes */}
                 <Route path="/scientist" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/scientist/research" element={<ProtectedRoute><ResearchAnalyticsPage /></ProtectedRoute>} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

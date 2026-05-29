@@ -35,7 +35,19 @@ export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = localStorage.getItem('agricosmo-token');
+  let token = localStorage.getItem('agricosmo-token');
+  if (!token) {
+    try {
+      const storeState = localStorage.getItem('agricosmo-store');
+      if (storeState) {
+        const parsed = JSON.parse(storeState);
+        token = parsed?.state?.token;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   const headers = new Headers(options.headers);
 
   if (token && !headers.has('Authorization')) {

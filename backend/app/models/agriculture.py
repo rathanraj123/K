@@ -73,8 +73,20 @@ class DiseaseDetection(Base):
     scan_latitude = Column(Float, nullable=True)
     scan_longitude = Column(Float, nullable=True)
     scan_location_name = Column(String, nullable=True)
+    district = Column(String, nullable=True)
     crop_type = Column(String, nullable=True)
     
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class InsightFeed(Base):
+    __tablename__ = "insight_feeds"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    category = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    severity_color = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class DetectionFeedback(Base):

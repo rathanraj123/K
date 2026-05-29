@@ -9,7 +9,15 @@ class AgricultureService:
         
     async def get_weather_intelligence(self, lat: float, lon: float) -> Optional[Dict[str, Any]]:
         if not self.weather_api_key:
-            return {"status": "error", "message": "Weather API essentially disabled. Missing key."}
+            # Graceful fallback mock data for demonstration
+            return {
+                "temperature_c": 28.5,
+                "humidity_percent": 85, # High humidity to trigger disease risk warnings
+                "rainfall_mm": 12.0,
+                "description": "Scattered thunderstorms",
+                "agri_warnings": ["High Humidity: Watch for blight/fungal signs.", "Heavy Rain: Check drainage; delay chemical sprays."],
+                "city": "Mockville (No API Key)"
+            }
             
         params = {
             "lat": lat,

@@ -48,7 +48,10 @@ async def lifespan(app: FastAPI):
                 ("scan_latitude", "DOUBLE PRECISION"),
                 ("scan_longitude", "DOUBLE PRECISION"),
                 ("scan_location_name", "VARCHAR"),
-                ("crop_type", "VARCHAR")
+                ("crop_type", "VARCHAR"),
+                ("district", "VARCHAR"),
+                ("scientist_data", "JSON"),
+                ("thumbnail_url", "VARCHAR")
             ]
             for col_name, col_type in columns_to_verify:
                 await conn.execute(text(f"ALTER TABLE disease_detections ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
@@ -90,6 +93,24 @@ async def lifespan(app: FastAPI):
             logger.info("Demo user seeded: demo@agricosmo.com / demo1234")
         else:
             logger.info("Demo user already exists.")
+
+        result = await session.execute(select(User).where(User.email == "admin@agricosmo.ai"))
+        admin_user = result.scalars().first()
+        if not admin_user:
+            admin_user = User(
+                email="admin@agricosmo.ai",
+                hashed_password=get_password_hash("admin123"),
+                full_name="System Admin",
+                role="admin",
+                region="Global",
+                is_active=True,
+                is_superuser=True
+            )
+            session.add(admin_user)
+            await session.commit()
+            logger.info("Admin user seeded: admin@agricosmo.ai / admin123")
+        else:
+            logger.info("Admin user already exists.")
 
     # ── Warm up services ────────────────────────────────────────────────────
     # 0 & 1. Start and setup Elasticsearch in the background to avoid blocking server start
@@ -177,9 +198,24 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
+
+# 3. Global Exception Handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "path": request.url.path},
+    )
+
+# 4. Health Check Endpoint (Render Readiness/Liveness Probe)
+@app.get("/health", tags=["system"])
+@app.get("/api/v1/health", tags=["system"])
+async def health_check():
+    return {"status": "healthy", "version": settings.APP_VERSION, "environment": settings.ENVIRONMENT}
 
 # Exception handlers
 @app.exception_handler(AppError)

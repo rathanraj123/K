@@ -1,91 +1,81 @@
-# Production Deployment Guide - AgriCosmo AI Platform
+# AgriCosmo AI Production Deployment Guide
 
-This guide outlines the production deployment steps for the AgriCosmo AI Platform, configuring frontend deployment on Vercel, backend deployment on Render, and database/auth/storage integration on Supabase.
+This guide details the exact steps required to deploy the AgriCosmo AI platform in a production environment with zero local dependencies.
 
----
+## Architecture
 
-## 1. Supabase Setup (Database, Auth, & Storage)
-
-AgriCosmo uses Supabase for structured data persistence, user auth, and compressed scanning image storage.
-
-### A. Database Connection
-1. In your Supabase Dashboard, navigate to **Project Settings > Database**.
-2. Copy the **URI connection string** under "Connection strings" (use the Pooler connection URL if available, ensuring it's in transaction/session mode).
-3. Set this as `DATABASE_URL` in the backend environment. Replace the scheme prefix `postgres://` or `postgresql://` with `postgresql+asyncpg://` to support SQLAlchemy's asynchronous drivers.
-
-### B. Storage Buckets
-1. In the Supabase Dashboard, go to **Storage**.
-2. Create a new bucket named **`agricosmo-scans`**.
-3. Set the bucket privacy to **Public** so public URLs are retrievable (otherwise, update backend credentials and storage service to use signed URLs).
-4. Under Policies, configure a policy allowing authenticated users to upload and view resources.
+*   **Frontend:** Hosted on Vercel.
+*   **Backend:** Hosted on Render (Web Service + Background Worker).
+*   **Database & Storage:** Hosted on Supabase (PostgreSQL + S3 Object Storage).
+*   **Message Broker & Cache:** Hosted on Upstash Redis (or Render Redis).
 
 ---
 
-## 2. Backend Deployment (Render)
+## 1. Supabase Setup (Database & Storage)
 
-The FastAPI backend runs on Render as a Web Service.
-
-### A. Web Service Setup
-1. Create a new **Web Service** on Render connected to your git repository.
-2. Configure settings:
-   - **Root Directory**: `backend`
-   - **Language**: `Python`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-3. Select a plan (e.g., Free or Starter tier).
-
-### B. Environment Variables
-In the Render dashboard under your service's **Environment** tab, add:
-
-| Key | Example / Description |
-| --- | --- |
-| `ENVIRONMENT` | `production` |
-| `ENV_STATE` | `production` |
-| `SECRET_KEY` | *[Long secure random string]* |
-| `JWT_SECRET_KEY` | *[Long secure random string]* |
-| `DATABASE_URL` | *[Your Supabase Database Connection URI]* |
-| `SUPABASE_URL` | `https://your-project.supabase.co` |
-| `SUPABASE_ANON_KEY` | *[Your Supabase anon public key]* |
-| `SUPABASE_SERVICE_ROLE_KEY` | *[Your Supabase service role private key]* |
-| `NEWS_API_KEY` | *[Your NewsAPI subscription key]* |
-| `DATA_GOV_API_KEY` | *[Your Data.gov.in API key]* |
-| `GROQ_API_KEY` | *[Your Groq API key for Chatbot]* |
-| `OPENWEATHER_API_KEY` | *[Your OpenWeather API key]* |
-| `FRONTEND_URL` | `https://your-frontend.vercel.app` |
+1.  Create a new project on [Supabase](https://supabase.com/).
+2.  Navigate to **Project Settings -> Database**.
+    *   Copy the **Connection String (URI)**. It should look like `postgresql://postgres.[project]:[password]@aws-0-region.pooler.supabase.com:6543/postgres`.
+    *   Ensure **Connection Pooling** is enabled (Session mode is preferred for asyncpg, but the backend disables prepared statements to safely support Transaction mode).
+3.  Navigate to **Project Settings -> API**.
+    *   Copy the `Project URL`.
+    *   Copy the `anon` `public` key (used by frontend).
+    *   Copy the `service_role` `secret` key (used strictly by backend).
+4.  Navigate to **Storage**.
+    *   Create a new public bucket named `agricosmo-scans`.
 
 ---
 
-## 3. Frontend Deployment (Vercel)
+## 2. Render Setup (Backend)
 
-The Vite+React frontend is deployed on Vercel as a Static Site.
+1.  Create a new account on [Render](https://render.com/).
+2.  Navigate to **Blueprints** and connect your GitHub repository.
+3.  Select the `backend/render.yaml` file to automate the deployment.
+4.  Render will automatically propose creating two services:
+    *   `agricosmo-api` (Web Service)
+    *   `agricosmo-worker` (Background Celery Worker)
+5.  In the Render Dashboard, configure the following Environment Variables for **both** services:
 
-### A. Project Import
-1. Import your repository into the Vercel Dashboard.
-2. Configure project options:
-   - **Root Directory**: `frontend`
-   - **Framework Preset**: `Vite`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-3. Add the following **Environment Variables**:
+| Variable | Description |
+| :--- | :--- |
+| `DATABASE_URL` | Your Supabase Connection String (from step 1.2). |
+| `SUPABASE_URL` | Your Supabase Project URL. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Your Supabase `service_role` key. Do not use the anon key. |
+| `REDIS_URL` | A Redis connection string (e.g., from Upstash or a Render Redis instance). |
+| `GROQ_API_KEY` | Your Groq API key for LLM analytics. |
+| `BACKEND_CORS_ORIGINS` | Comma-separated list of your Vercel domains (e.g., `https://my-app.vercel.app`). |
 
-| Key | Description |
-| --- | --- |
+6.  Deploy both services. The `start.sh` script will automatically run database migrations before the API boots.
+
+---
+
+## 3. Vercel Setup (Frontend)
+
+1.  Create a new project on [Vercel](https://vercel.com/) and import your GitHub repository.
+2.  Set the **Root Directory** to `frontend`.
+3.  The Framework Preset should automatically detect **Vite**.
+4.  Configure the following Environment Variables:
+
+| Variable | Description |
+| :--- | :--- |
+| `VITE_API_URL` | The public URL of your deployed Render Web Service (e.g., `https://agricosmo-api.onrender.com/api/v1`). |
+| `VITE_SUPABASE_URL` | Your Supabase Project URL. |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase `anon` `public` key. |
 | `VITE_ENVIRONMENT` | `production` |
-| `VITE_API_URL` | `https://your-backend.onrender.com/api/v1` |
-| `VITE_SUPABASE_URL` | `https://your-project.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | `your-supabase-anon-key` |
+
+5.  Deploy the frontend.
 
 ---
 
-## 4. Troubleshooting & Best Practices
+## 4. Final Validation
 
-### CORS Failures
-If you receive CORS errors on the frontend:
-* Ensure `FRONTEND_URL` on Render environment variables contains the exact scheme and host (e.g. `https://my-app.vercel.app`) without trailing slashes.
-* Set `BACKEND_CORS_ORIGINS=["https://my-app.vercel.app"]` explicitly.
+1.  Navigate to your Vercel URL.
+2.  Ensure that the login page loads correctly (Frontend is working).
+3.  Attempt to log in. (Validates Frontend -> Backend -> Database connectivity).
+4.  Upload a crop scan. (Validates Backend -> Supabase Storage, and Backend -> Celery Worker -> Redis connectivity).
 
-### Port Binding Issues
-FastAPI dynamically binds to `$PORT` environment variable supplied by Render. Ensure uvicorn's startup flag specifies `--port $PORT` or relies on Render binding standard.
+## Troubleshooting
 
-### NewsAPI Free-Tier Restriction
-Note that the NewsAPI free tier limits calls to `localhost`. If deploying on Render/Vercel using a free tier NewsAPI key, external fetches might receive a 426 status from NewsAPI. In this case, the AgriCosmo backend will gracefully fall back to displaying the local cached agricultural news, avoiding any application crash.
+*   **App Crash on Render (Logs say CRITICAL SECURITY ERROR):** You forgot to set the `SECRET_KEY` in the Render environment variables.
+*   **Database Migrations Failed:** Verify your `DATABASE_URL` is correct and includes your Supabase password.
+*   **Images Not Loading:** Ensure the `agricosmo-scans` bucket in Supabase is set to "Public".

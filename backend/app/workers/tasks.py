@@ -10,6 +10,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.agriculture import DiseaseDetection
 from app.models.analytics import AILog
 from app.modules.detection.service import detection_service
+from app.core.cache import invalidate_dashboard_cache
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -172,6 +173,29 @@ async def run_detection_async(
                         "severity": result.get("severity", "unknown")
                     }
                     await EventService.emit_event(db, "analytics_update", payload, user_id=detection.user_id)
+                    
+                    # 4. Generate an AI Insight Feed entry
+                    from app.models.agriculture import InsightFeed
+                    severity_mapping = {"low": "green", "medium": "yellow", "high": "red", "critical": "red", "unknown": "blue"}
+                    sev_level = (result.get("severity") or "unknown").lower()
+                    
+                    if disease_name.lower() != "healthy" and disease_name.lower() != "normal":
+                        feed = InsightFeed(
+                            title=f"{disease_name} Detected in {region}",
+                            description=f"AI confirmed {disease_name} on {crop_type} with {float(result.get('confidence', 0))*100:.0f}% confidence. Immediate observation recommended.",
+                            category="OUTBREAK",
+                            severity_color=severity_mapping.get(sev_level, "red")
+                        )
+                        db.add(feed)
+                    else:
+                        feed = InsightFeed(
+                            title=f"Healthy {crop_type} Verified",
+                            description=f"Recent scan in {region} confirms crop is healthy.",
+                            category="VERIFICATION",
+                            severity_color="green"
+                        )
+                        db.add(feed)
+                        
                 except Exception as telemetry_err:
                     logger.error(f"Failed to process telemetry in background task: {telemetry_err}")
 
@@ -179,6 +203,12 @@ async def run_detection_async(
                     await db.commit()
                 except Exception as commit_err:
                     logger.debug(f"Telemetry session cleanup commit skipped or failed: {commit_err}")
+                    
+                # Invalidate dashboard cache immediately so UI shows new scans instantly
+                try:
+                    await invalidate_dashboard_cache(user_id=detection.user_id)
+                except Exception as cache_err:
+                    logger.warning(f"Failed to invalidate dashboard cache: {cache_err}")
 
                 logger.info(
                     f"Detection {detection_id} completed in {duration_ms:.0f}ms — "

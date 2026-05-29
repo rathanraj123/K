@@ -94,3 +94,4 @@ _cleanup_backup_phase2/
 backend/app/model_cache/
 backend/scratch/
 backend/static/uploads/
+.env*

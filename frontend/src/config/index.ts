@@ -4,7 +4,7 @@
 export const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE || 'development';
 
 export const API_URL = (() => {
-  let url = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+  let url = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000/api/v1`;
   // Standardize trailing slashes
   url = url.replace(/\/+$/, '');
   

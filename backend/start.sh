@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
 
-# Run migrations (if you have them, uncomment the next line)
-# alembic upgrade head
+echo "Starting deployment process..."
+
+# Run migrations automatically
+echo "Running database migrations..."
+alembic upgrade head || echo "WARNING: Alembic migration failed, continuing anyway..."
 
 # Start Gunicorn with Uvicorn workers
-exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+echo "Starting Gunicorn server..."
+exec gunicorn app.main:app -c gunicorn_conf.py
