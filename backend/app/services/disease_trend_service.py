@@ -26,17 +26,22 @@ class DiseaseTrendService:
         
         # Group by day
         day_map = {}
+        
+        # Pre-fill the last 7 days (including today) in chronological order
+        today = datetime.utcnow()
+        for i in range(6, -1, -1):
+            day_str = (today - timedelta(days=i)).strftime("%a")
+            day_map[day_str] = {"day": day_str, "blight": 0, "spot": 0, "blast": 0, "smut": 0, "tungro": 0}
+
         for row in trends:
-            day_str = row.day.strftime("%a") if row.day else "Unknown" # Mon, Tue, etc
-            if day_str not in day_map:
-                day_map[day_str] = {"day": day_str, "blight": 0, "spot": 0, "blast": 0, "smut": 0, "tungro": 0}
-            
-            disease = (row.detected_disease or "").lower()
-            if "blight" in disease: day_map[day_str]["blight"] += row.count
-            elif "spot" in disease: day_map[day_str]["spot"] += row.count
-            elif "blast" in disease: day_map[day_str]["blast"] += row.count
-            elif "smut" in disease: day_map[day_str]["smut"] += row.count
-            elif "tungro" in disease: day_map[day_str]["tungro"] += row.count
+            day_str = row.day.strftime("%a") if row.day else "Unknown"
+            if day_str in day_map:
+                disease = (row.detected_disease or "").lower()
+                if "blight" in disease: day_map[day_str]["blight"] += row.count
+                elif "spot" in disease: day_map[day_str]["spot"] += row.count
+                elif "blast" in disease: day_map[day_str]["blast"] += row.count
+                elif "smut" in disease: day_map[day_str]["smut"] += row.count
+                elif "tungro" in disease: day_map[day_str]["tungro"] += row.count
             
         return list(day_map.values())
 
