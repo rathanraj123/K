@@ -93,6 +93,7 @@ class ConnectionManager:
                 # If it's a timeout, just continue and listen again.
                 # The generator terminates on exception, so we need to recreate it via the while loop.
                 if "Timeout" in str(e) or "TimeoutError" in type(e).__name__:
+                    await asyncio.sleep(1)
                     continue
                 logger.error(f"Redis PubSub error: {e}")
                 await asyncio.sleep(2)
