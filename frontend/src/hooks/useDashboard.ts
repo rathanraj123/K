@@ -8,6 +8,7 @@ export const useDashboardOverview = () => {
     queryKey: ['dashboard', 'overview'],
     queryFn: dashboardApi.getOverview,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -16,6 +17,7 @@ export const useDiseaseTrends = () => {
     queryKey: ['dashboard', 'trends'],
     queryFn: dashboardApi.getDiseaseTrends,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -24,6 +26,7 @@ export const useRecentActivity = () => {
     queryKey: ['dashboard', 'recentActivity'],
     queryFn: dashboardApi.getRecentActivity,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -32,6 +35,7 @@ export const useHeatmapData = () => {
     queryKey: ['dashboard', 'heatmap'],
     queryFn: dashboardApi.getHeatmapData,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -40,6 +44,7 @@ export const useTopDiseases = () => {
     queryKey: ['dashboard', 'topDiseases'],
     queryFn: dashboardApi.getTopDiseases,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -48,6 +53,7 @@ export const useScanInsights = () => {
     queryKey: ['dashboard', 'scanInsights'],
     queryFn: dashboardApi.getScanInsights,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -56,6 +62,7 @@ export const useInsightFeed = () => {
     queryKey: ['dashboard', 'insightFeed'],
     queryFn: dashboardApi.getInsightFeed,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
@@ -64,6 +71,7 @@ export const usePredictions = () => {
     queryKey: ['dashboard', 'predictions'],
     queryFn: dashboardApi.getPredictions,
     staleTime: 1000 * 60 * 5,
+    refetchInterval: 5000,
   });
 };
 
